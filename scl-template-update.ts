@@ -13,7 +13,7 @@ import {
   removeDataType,
   LNodeDescription,
   updateLNodeType,
-} from '@openenergytools/scl-lib';
+} from '@openscd/scl-lib';
 
 import { TreeGrid, TreeSelection } from '@openenergytools/tree-grid';
 
@@ -27,7 +27,7 @@ import { MdSelectOption } from '@scopedelement/material-web/select/MdSelectOptio
 import { MdCircularProgress } from '@scopedelement/material-web/progress/circular-progress.js';
 import { MdOutlinedTextField } from '@scopedelement/material-web/textfield/MdOutlinedTextField.js';
 import { MdIconButton } from '@scopedelement/material-web/iconbutton/MdIconButton.js';
-import { CdcChildren } from '@openenergytools/scl-lib/dist/tDataTypeTemplates/nsdToJson.js';
+import { CdcChildren } from '@openscd/scl-lib/dist/tDataTypeTemplates/nsdToJson.js';
 
 import { AddDataObjectDialog } from './components/add-data-object-dialog.js';
 import { LNodeTypeSidebar } from './components/lnodetype-sidebar.js';

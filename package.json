@@ -22,7 +22,7 @@
     "@scopedelement/material-web": "^3.8.0",
     "@openenergytools/open-scd-core": "0.0.5",
     "@open-wc/scoped-elements": "^3.0.5",
-    "@openenergytools/scl-lib": "1.8.0",
+    "@openscd/scl-lib": "2.0.0",
     "lit": "^3.0.0"
   },
   "devDependencies": {

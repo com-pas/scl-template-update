@@ -1,4 +1,4 @@
-import { nsdToJson, LNodeDescription } from '@openenergytools/scl-lib';
+import { nsdToJson, LNodeDescription } from '@openscd/scl-lib';
 import { cdClasses } from './constants.js';
 
 function getCDCForDOType(doc: XMLDocument, doType: string): string | undefined {
