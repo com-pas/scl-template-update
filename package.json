@@ -1,8 +1,8 @@
 {
-  "name": "@openscd/oscd-template-generator",
-  "description": "OpenSCD plugin for creating new DataTypeTemplates",
+  "name": "@com-pas/scl-template-update",
+  "description": "OpenSCD plugin for updating DataTypeTemplates",
   "license": "Apache-2.0",
-  "author": "oscd-template-generator",
+  "author": "CoMPAS",
   "version": "0.0.0",
   "scripts": {
     "prepare": "npm run build",

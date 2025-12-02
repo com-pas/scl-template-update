@@ -39,3 +39,27 @@ export function filterSelection(
 
   return filteredTree;
 }
+
+export function removeDOsNotInSelection(
+  lNodeType: Element,
+  selection: TreeSelection
+): Element {
+  const clonedLNodeType = lNodeType.cloneNode(true) as Element;
+
+  // Remove DOs that are not in selection
+  const dosToRemove: Element[] = [];
+  Array.from(clonedLNodeType.querySelectorAll(':scope > DO')).forEach(
+    doElement => {
+      const doName = doElement.getAttribute('name');
+      if (doName && !selection[doName]) {
+        dosToRemove.push(doElement);
+      }
+    }
+  );
+
+  dosToRemove.forEach(doElement => {
+    clonedLNodeType.removeChild(doElement);
+  });
+
+  return clonedLNodeType;
+}

@@ -4,7 +4,7 @@ import { state, query, property } from 'lit/decorators.js';
 
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
-import { newEditEvent } from '@openenergytools/open-scd-core';
+import { newEditEvent, Edit } from '@openenergytools/open-scd-core';
 
 import {
   insertSelectedLNodeType,
@@ -30,6 +30,7 @@ import { MdIconButton } from '@scopedelement/material-web/iconbutton/MdIconButto
 import { CdcChildren } from '@openscd/scl-lib/dist/tDataTypeTemplates/nsdToJson.js';
 
 import { AddDataObjectDialog } from './components/add-data-object-dialog.js';
+import { DeleteDialog } from './components/delete-dialog.js';
 import { LNodeTypeSidebar } from './components/lnodetype-sidebar.js';
 import { SettingsDialog, UpdateSetting } from './components/settings-dialog.js';
 import {
@@ -42,6 +43,7 @@ import {
   getSelectedLNodeType,
   isLNodeTypeReferenced,
   filterSelection,
+  removeDOsNotInSelection,
 } from './foundation/utils.js';
 
 export default class NsdTemplateUpdated extends ScopedElementsMixin(
@@ -60,12 +62,16 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     'md-outlined-text-field': MdOutlinedTextField,
     'md-icon-button': MdIconButton,
     'add-data-object-dialog': AddDataObjectDialog,
+    'delete-dialog': DeleteDialog,
     'lnodetype-sidebar': LNodeTypeSidebar,
     'settings-dialog': SettingsDialog,
   };
 
   @property()
   doc?: XMLDocument;
+
+  @property({ type: Number })
+  editCount = -1;
 
   @query('tree-grid')
   treeUI!: TreeGrid;
@@ -78,6 +84,9 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
 
   @query('#dialog-choice')
   choiceDialog?: MdDialog;
+
+  @query('delete-dialog')
+  deleteDialog!: DeleteDialog;
 
   @query('add-data-object-dialog')
   addDataObjectDialog!: HTMLElement & {
@@ -115,11 +124,62 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
   @state()
   disableAddDataObjectButton = true;
 
+  @state()
+  lNodeTypeDescription = '';
+
+  private ignoreNextEditCount = false;
+
   updated(changedProperties: Map<string, unknown>) {
     super.updated?.(changedProperties);
     if (changedProperties.has('doc')) {
       this.resetUI(true);
       this.lNodeTypes = getLNodeTypes(this.doc);
+    }
+
+    if (changedProperties.has('editCount') && this.editCount >= 0) {
+      const shouldRebuildTree = !this.ignoreNextEditCount;
+
+      if (this.ignoreNextEditCount) {
+        this.ignoreNextEditCount = false;
+      }
+
+      this.lNodeTypes = getLNodeTypes(this.doc);
+      this.refreshSelectedLNodeType(shouldRebuildTree);
+    }
+  }
+
+  private refreshSelectedLNodeType(rebuildTree: boolean = true): void {
+    if (!this.selectedLNodeType) return;
+
+    const selectedId = this.selectedLNodeType.getAttribute('id');
+    const updatedLNodeType = getSelectedLNodeType(this.doc!, selectedId!);
+
+    if (!updatedLNodeType) {
+      // Selected LNodeType no longer exists (was deleted), reset UI
+      this.resetUI(true);
+      return;
+    }
+
+    // Update the reference and description to reflect current document state
+    this.selectedLNodeType = updatedLNodeType;
+    this.lNodeTypeDescription = updatedLNodeType.getAttribute('desc') ?? '';
+
+    if (!rebuildTree) return;
+
+    // Rebuild the tree to show the updated structure after undo/redo
+    const selectedLNodeTypeClass = updatedLNodeType.getAttribute('lnClass');
+    if (selectedLNodeTypeClass) {
+      const { tree } = buildLNodeTree(
+        selectedLNodeTypeClass,
+        updatedLNodeType,
+        this.doc!
+      );
+      if (tree) {
+        this.lNodeTypeSelection = lNodeTypeToSelection(updatedLNodeType);
+        this.treeUI.tree = tree;
+        this.treeUI.selection = this.lNodeTypeSelection;
+        this.treeUI.requestUpdate();
+      }
     }
   }
 
@@ -130,6 +190,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       this.nsdSelection = undefined;
       this.lNodeTypeUI?.reset();
       this.disableAddDataObjectButton = true;
+      this.lNodeTypeDescription = '';
     }
     if (this.treeUI) {
       this.treeUI.tree = {};
@@ -165,42 +226,121 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     const lnID = this.selectedLNodeType!.getAttribute('id')!;
     const desc = this.lnodeTypeDesc.value;
 
-    const inserts = insertSelectedLNodeType(this.doc, this.nsdSelection, {
-      class: lnClass,
-      ...(!!desc && { desc }),
-      data: this.treeUI.tree as LNodeDescription,
-    });
+    const currentLNodeType = getSelectedLNodeType(this.doc, lnID);
+    if (!currentLNodeType) return;
 
-    if (inserts.length === 0) {
-      const currentDesc = this.selectedLNodeType?.getAttribute('desc') ?? '';
-      if (this.selectedLNodeType && currentDesc !== desc) {
+    const currentDocumentSelection = lNodeTypeToSelection(currentLNodeType);
+
+    const selectionsMatch =
+      JSON.stringify(this.nsdSelection) ===
+      JSON.stringify(currentDocumentSelection);
+    const currentDesc = currentLNodeType.getAttribute('desc') ?? '';
+    const descChanged = currentDesc !== desc;
+
+    if (selectionsMatch) {
+      if (this.selectedLNodeType && descChanged) {
         this.updateLNodeTypeDescription(desc);
         this.lNodeTypes = getLNodeTypes(this.doc);
       }
       return;
     }
 
-    if (updateSetting === UpdateSetting.Update) {
-      const newLNodeType = inserts.find(
-        insert => (insert.node as Element).tagName === 'LNodeType'
-      )?.node as Element;
+    const inserts = insertSelectedLNodeType(this.doc, this.nsdSelection, {
+      class: lnClass,
+      ...(!!desc && { desc }),
+      data: this.treeUI.tree as LNodeDescription,
+    });
 
-      if (newLNodeType) {
+    if (updateSetting === UpdateSetting.Update) {
+      const lNodeTypeInsertIndex = inserts.findIndex(
+        insert => (insert.node as Element).tagName === 'LNodeType'
+      );
+
+      let newLNodeType: Element | undefined;
+      let allEdits: Edit[];
+
+      if (lNodeTypeInsertIndex >= 0) {
+        // We have a new LNodeType from insertSelectedLNodeType
+        const originalInsert = inserts[lNodeTypeInsertIndex];
+        newLNodeType = (originalInsert.node as Element).cloneNode(
+          true
+        ) as Element;
         newLNodeType.setAttribute('id', lnID);
 
-        const updateEdits = updateLNodeType(newLNodeType, this.doc);
-
-        if (updateEdits.length > 0) {
-          this.dispatchEvent(
-            newEditEvent(updateEdits, {
-              title: `Update ${lnID}`,
-            })
-          );
+        const currentDescription = currentLNodeType.getAttribute('desc') ?? '';
+        if (desc !== currentDescription) {
+          if (desc) {
+            newLNodeType.setAttribute('desc', desc);
+          } else {
+            newLNodeType.removeAttribute('desc');
+          }
         }
+
+        // Get supporting types (everything except the LNodeType insert)
+        const supportingTypes = inserts.filter(
+          (_, index) => index !== lNodeTypeInsertIndex
+        );
+
+        // Remove the old LNodeType
+        const removeOld = removeDataType(
+          { node: currentLNodeType },
+          { force: true }
+        );
+
+        // Create new insert with the modified element
+        const newInsert = {
+          parent: originalInsert.parent,
+          node: newLNodeType,
+          reference: originalInsert.reference,
+        };
+
+        // Combine: supporting types first, then INSERT new, then remove old
+        // This ensures the reference element exists when we do the insert
+        allEdits = [...supportingTypes, newInsert, ...removeOld];
+      } else if (inserts.length === 0) {
+        // Only removals - clone existing and remove DOs
+        newLNodeType = removeDOsNotInSelection(
+          this.selectedLNodeType!,
+          this.nsdSelection!
+        );
+
+        newLNodeType.setAttribute('id', lnID);
+
+        const currentDescription = currentLNodeType.getAttribute('desc') ?? '';
+        if (desc !== currentDescription) {
+          if (desc) {
+            newLNodeType.setAttribute('desc', desc);
+          } else {
+            newLNodeType.removeAttribute('desc');
+          }
+        }
+
+        const updateEdits = updateLNodeType(newLNodeType, this.doc);
+        allEdits = updateEdits;
+      } else {
+        // Only supporting types, no LNodeType changes
+        allEdits = inserts;
+      }
+
+      if (allEdits.length > 0) {
+        this.dispatchEvent(
+          newEditEvent(allEdits, {
+            title: `Update ${lnID}`,
+          })
+        );
+      }
+
+      // Update the reference to point to the updated element in the document
+      this.selectedLNodeType = getSelectedLNodeType(this.doc, lnID);
+
+      // Update nsdSelection to reflect the actual current state after the edit
+      if (this.selectedLNodeType) {
+        this.nsdSelection = lNodeTypeToSelection(this.selectedLNodeType);
       }
 
       this.fabLabel = `${lnID} updated!`;
     } else {
+      this.ignoreNextEditCount = true;
       this.dispatchEvent(newEditEvent(inserts));
       await this.updateComplete;
 
@@ -208,6 +348,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
         { node: this.selectedLNodeType! },
         { force: true }
       );
+      this.ignoreNextEditCount = true;
       this.dispatchEvent(
         newEditEvent(remove, { squash: true, title: `Update ${lnID}` })
       );
@@ -238,11 +379,13 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
   }
 
   private updateLNodeTypeDescription(desc: string): void {
+    this.ignoreNextEditCount = true;
+    this.lNodeTypeDescription = desc;
     this.dispatchEvent(
       newEditEvent([
         {
           element: this.selectedLNodeType!,
-          attributes: { desc },
+          attributes: { desc: desc || null },
           attributesNS: {},
         },
       ])
@@ -254,17 +397,48 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     this.saveTemplates();
   }
 
+  private handleDeleteLNodeType(): void {
+    if (!this.doc || !this.selectedLNodeType) return;
+
+    const lnID = this.selectedLNodeType.getAttribute('id');
+    this.deleteDialog.lnodeTypeId = lnID || '';
+    this.deleteDialog.message = `Are you sure you want to delete ${lnID}? This action can have severe consequences.`;
+    this.deleteDialog.onConfirm = () => this.confirmDelete();
+    this.deleteDialog.show();
+  }
+
+  private confirmDelete(): void {
+    if (!this.doc || !this.selectedLNodeType) return;
+
+    const lnID = this.selectedLNodeType.getAttribute('id');
+    const remove = removeDataType(
+      { node: this.selectedLNodeType },
+      { force: true }
+    );
+
+    this.ignoreNextEditCount = true;
+    this.dispatchEvent(newEditEvent(remove, { title: `Delete ${lnID}` }));
+
+    this.resetUI(true);
+    this.lNodeTypes = getLNodeTypes(this.doc);
+  }
+
   private handleUpdateTemplate(): void {
     if (!this.doc || !this.selectedLNodeType) return;
 
-    this.nsdSelection = filterSelection(
+    const newNsdSelection = filterSelection(
       this.treeUI.tree,
       this.treeUI.selection
     );
 
+    // Only update nsdSelection if the user's selection has actually changed
+    // This prevents overwriting the document-synced selection from a previous update
+    if (JSON.stringify(newNsdSelection) !== JSON.stringify(this.nsdSelection)) {
+      this.nsdSelection = newNsdSelection;
+    }
+
     if (
-      JSON.stringify(this.treeUI.selection) !==
-      JSON.stringify(this.nsdSelection)
+      JSON.stringify(this.treeUI.selection) !== JSON.stringify(newNsdSelection)
     ) {
       this.choiceDialog?.show();
       return;
@@ -278,6 +452,8 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     this.disableAddDataObjectButton = true;
     this.loading = true;
     this.selectedLNodeType = getSelectedLNodeType(this.doc!, id);
+    this.lNodeTypeDescription =
+      this.selectedLNodeType?.getAttribute('desc') ?? '';
     // Let the browser render the loader before heavy work
     await new Promise(resolve => {
       setTimeout(resolve, 0);
@@ -440,11 +616,19 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
         <md-icon slot="icon">add</md-icon>
         Add Data Object
       </md-outlined-button>
+      <md-outlined-button
+        ?disabled=${!this.selectedLNodeType}
+        @click=${this.handleDeleteLNodeType}
+        class="button-delete"
+      >
+        <md-icon slot="icon">delete</md-icon>
+        Delete Logical Node Type
+      </md-outlined-button>
       <md-outlined-text-field
         id="lnodetype-desc"
         label="Description"
         ?disabled=${!this.selectedLNodeType}
-        .value=${this.selectedLNodeType?.getAttribute('desc') ?? ''}
+        .value=${this.lNodeTypeDescription}
       ></md-outlined-text-field>
       ${this.loading
         ? html`<md-circular-progress indeterminate></md-circular-progress>`
@@ -467,6 +651,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
         ></lnodetype-sidebar>
       </div>
       ${this.renderFab()} ${this.renderWarning()} ${this.renderChoice()}
+      <delete-dialog></delete-dialog>
       <add-data-object-dialog
         .cdClasses=${cdClasses}
         .tree=${this.treeUI?.tree}
@@ -527,6 +712,10 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     .button.close {
       --md-outlined-button-label-text-color: var(--oscd-accent-red);
       --md-outlined-button-hover-label-text-color: var(--oscd-accent-red);
+    }
+
+    .button-delete md-icon {
+      color: var(--oscd-accent-red);
     }
 
     .container {
