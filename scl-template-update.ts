@@ -127,8 +127,6 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
   @state()
   lNodeTypeDescription = '';
 
-  private ignoreNextEditCount = false;
-
   updated(changedProperties: Map<string, unknown>) {
     super.updated?.(changedProperties);
     if (changedProperties.has('doc')) {
@@ -137,34 +135,21 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     }
 
     if (changedProperties.has('editCount') && this.editCount >= 0) {
-      const shouldRebuildTree = !this.ignoreNextEditCount;
-
-      if (this.ignoreNextEditCount) {
-        this.ignoreNextEditCount = false;
-      }
-
       this.lNodeTypes = getLNodeTypes(this.doc);
-      this.refreshSelectedLNodeType(shouldRebuildTree);
+      this.refreshSelectedLNodeType();
     }
   }
 
-  private refreshSelectedLNodeType(rebuildTree: boolean = true): void {
+  private refreshSelectedLNodeType(): void {
     if (!this.selectedLNodeType) return;
 
     const selectedId = this.selectedLNodeType.getAttribute('id');
     const updatedLNodeType = getSelectedLNodeType(this.doc!, selectedId!);
 
-    if (!updatedLNodeType) {
-      // Selected LNodeType no longer exists (was deleted), reset UI
-      this.resetUI(true);
-      return;
-    }
+    if (!updatedLNodeType) return;
 
-    // Update the reference and description to reflect current document state
     this.selectedLNodeType = updatedLNodeType;
     this.lNodeTypeDescription = updatedLNodeType.getAttribute('desc') ?? '';
-
-    if (!rebuildTree) return;
 
     // Rebuild the tree to show the updated structure after undo/redo
     const selectedLNodeTypeClass = updatedLNodeType.getAttribute('lnClass');
@@ -176,6 +161,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       );
       if (tree) {
         this.lNodeTypeSelection = lNodeTypeToSelection(updatedLNodeType);
+        this.nsdSelection = this.lNodeTypeSelection;
         this.treeUI.tree = tree;
         this.treeUI.selection = this.lNodeTypeSelection;
         this.treeUI.requestUpdate();
@@ -216,6 +202,22 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     this.choiceDialog?.close();
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  private applyDescriptionUpdate(
+    newLNodeType: Element,
+    desc: string,
+    currentLNodeType: Element
+  ): void {
+    const currentDesc = currentLNodeType.getAttribute('desc') ?? '';
+    if (desc !== currentDesc) {
+      if (desc) {
+        newLNodeType.setAttribute('desc', desc);
+      } else {
+        newLNodeType.removeAttribute('desc');
+      }
+    }
+  }
+
   private async saveTemplates() {
     if (!this.doc || !this.nsdSelection) return;
     const updateSetting =
@@ -241,6 +243,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       if (this.selectedLNodeType && descChanged) {
         this.updateLNodeTypeDescription(desc);
         this.lNodeTypes = getLNodeTypes(this.doc);
+        this.showSuccessFeedback(lnID);
       }
       return;
     }
@@ -252,75 +255,12 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     });
 
     if (updateSetting === UpdateSetting.Update) {
-      const lNodeTypeInsertIndex = inserts.findIndex(
-        insert => (insert.node as Element).tagName === 'LNodeType'
+      const allEdits = this.buildUpdateEdits(
+        inserts,
+        currentLNodeType,
+        lnID,
+        desc
       );
-
-      let newLNodeType: Element | undefined;
-      let allEdits: Edit[];
-
-      if (lNodeTypeInsertIndex >= 0) {
-        // We have a new LNodeType from insertSelectedLNodeType
-        const originalInsert = inserts[lNodeTypeInsertIndex];
-        newLNodeType = (originalInsert.node as Element).cloneNode(
-          true
-        ) as Element;
-        newLNodeType.setAttribute('id', lnID);
-
-        const currentDescription = currentLNodeType.getAttribute('desc') ?? '';
-        if (desc !== currentDescription) {
-          if (desc) {
-            newLNodeType.setAttribute('desc', desc);
-          } else {
-            newLNodeType.removeAttribute('desc');
-          }
-        }
-
-        // Get supporting types (everything except the LNodeType insert)
-        const supportingTypes = inserts.filter(
-          (_, index) => index !== lNodeTypeInsertIndex
-        );
-
-        // Remove the old LNodeType
-        const removeOld = removeDataType(
-          { node: currentLNodeType },
-          { force: true }
-        );
-
-        // Create new insert with the modified element
-        const newInsert = {
-          parent: originalInsert.parent,
-          node: newLNodeType,
-          reference: originalInsert.reference,
-        };
-
-        // Combine: supporting types first, then INSERT new, then remove old
-        // This ensures the reference element exists when we do the insert
-        allEdits = [...supportingTypes, newInsert, ...removeOld];
-      } else if (inserts.length === 0) {
-        // Only removals - clone existing and remove DOs
-        newLNodeType = removeDOsNotInSelection(
-          this.selectedLNodeType!,
-          this.nsdSelection!
-        );
-
-        newLNodeType.setAttribute('id', lnID);
-
-        const currentDescription = currentLNodeType.getAttribute('desc') ?? '';
-        if (desc !== currentDescription) {
-          if (desc) {
-            newLNodeType.setAttribute('desc', desc);
-          } else {
-            newLNodeType.removeAttribute('desc');
-          }
-        }
-
-        const updateEdits = updateLNodeType(newLNodeType, this.doc);
-        allEdits = updateEdits;
-      } else {
-        // Only supporting types, no LNodeType changes
-        allEdits = inserts;
-      }
 
       if (allEdits.length > 0) {
         this.dispatchEvent(
@@ -330,17 +270,9 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
         );
       }
 
-      // Update the reference to point to the updated element in the document
-      this.selectedLNodeType = getSelectedLNodeType(this.doc, lnID);
-
-      // Update nsdSelection to reflect the actual current state after the edit
-      if (this.selectedLNodeType) {
-        this.nsdSelection = lNodeTypeToSelection(this.selectedLNodeType);
-      }
-
-      this.fabLabel = `${lnID} updated!`;
+      this.showSuccessFeedback(lnID, 'update');
     } else {
-      this.ignoreNextEditCount = true;
+      // Swap mode: Insert new, then remove old with squash
       this.dispatchEvent(newEditEvent(inserts));
       await this.updateComplete;
 
@@ -348,7 +280,6 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
         { node: this.selectedLNodeType! },
         { force: true }
       );
-      this.ignoreNextEditCount = true;
       this.dispatchEvent(
         newEditEvent(remove, { squash: true, title: `Update ${lnID}` })
       );
@@ -357,29 +288,87 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
         insert => (insert.node as Element).tagName === 'LNodeType'
       )?.node as Element;
 
-      if (updatedLNodeType) {
-        const updatedLNodeTypeID = updatedLNodeType.getAttribute('id');
-        this.selectedLNodeType = updatedLNodeType;
-        await this.updateComplete;
-
-        if (this.lNodeTypeUI && updatedLNodeType) {
-          this.lNodeTypeUI.value = updatedLNodeType.getAttribute('id') ?? '';
-        }
-
-        this.fabLabel = `${updatedLNodeTypeID} swapped!`;
+      if (updatedLNodeType && this.lNodeTypeUI) {
+        this.lNodeTypeUI.value = updatedLNodeType.getAttribute('id') ?? '';
       }
+
+      const updatedID = updatedLNodeType?.getAttribute('id') ?? lnID;
+      this.showSuccessFeedback(updatedID, 'swap');
     }
 
     await this.updateComplete;
     this.lNodeTypes = getLNodeTypes(this.doc);
+  }
 
+  private showSuccessFeedback(
+    lnID: string,
+    mode: 'update' | 'swap' = 'update'
+  ): void {
+    this.fabLabel = mode === 'swap' ? `${lnID} swapped!` : `${lnID} updated!`;
     setTimeout(() => {
       this.fabLabel = 'Update Logical Node Type';
     }, 5000);
   }
 
+  private buildUpdateEdits(
+    inserts: Edit[],
+    currentLNodeType: Element,
+    lnID: string,
+    desc: string
+  ): Edit[] {
+    const lNodeTypeInsert = inserts.find(
+      insert =>
+        'node' in insert && (insert.node as Element).tagName === 'LNodeType'
+    );
+
+    if (
+      lNodeTypeInsert &&
+      'node' in lNodeTypeInsert &&
+      'parent' in lNodeTypeInsert &&
+      'reference' in lNodeTypeInsert
+    ) {
+      const newLNodeType = (lNodeTypeInsert.node as Element).cloneNode(
+        true
+      ) as Element;
+
+      newLNodeType.setAttribute('id', lnID);
+      this.applyDescriptionUpdate(newLNodeType, desc, currentLNodeType);
+
+      const supportingTypes = inserts.filter(
+        insert => insert !== lNodeTypeInsert
+      );
+      const removeOld = removeDataType(
+        { node: currentLNodeType },
+        { force: true }
+      );
+
+      return [
+        ...supportingTypes,
+        {
+          parent: lNodeTypeInsert.parent,
+          node: newLNodeType,
+          reference: lNodeTypeInsert.reference,
+        },
+        ...removeOld,
+      ];
+    }
+
+    if (inserts.length === 0) {
+      const newLNodeType = removeDOsNotInSelection(
+        currentLNodeType,
+        this.nsdSelection!
+      );
+
+      newLNodeType.setAttribute('id', lnID);
+      this.applyDescriptionUpdate(newLNodeType, desc, currentLNodeType);
+
+      return updateLNodeType(newLNodeType, this.doc!);
+    }
+
+    return inserts;
+  }
+
   private updateLNodeTypeDescription(desc: string): void {
-    this.ignoreNextEditCount = true;
     this.lNodeTypeDescription = desc;
     this.dispatchEvent(
       newEditEvent([
@@ -406,7 +395,6 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       { force: true }
     );
 
-    this.ignoreNextEditCount = true;
     this.dispatchEvent(newEditEvent(remove, { title: `Delete ${lnID}` }));
 
     this.resetUI(true);
@@ -421,8 +409,6 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       this.treeUI.selection
     );
 
-    // Only update nsdSelection if the user's selection has actually changed
-    // This prevents overwriting the document-synced selection from a previous update
     if (JSON.stringify(newNsdSelection) !== JSON.stringify(this.nsdSelection)) {
       this.nsdSelection = newNsdSelection;
     }
