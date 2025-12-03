@@ -40,13 +40,19 @@ export function filterSelection(
   return filteredTree;
 }
 
+/**
+ * Creates a clone of an LNodeType with only the DOs that are present in the selection.
+ * DOs not included in the selection are removed from the cloned element.
+ * @param lNodeType - The LNodeType element to filter
+ * @param selection - The tree selection containing the DO names to keep
+ * @returns A cloned LNodeType element containing only the selected DOs
+ */
 export function removeDOsNotInSelection(
   lNodeType: Element,
   selection: TreeSelection
 ): Element {
   const clonedLNodeType = lNodeType.cloneNode(true) as Element;
 
-  // Remove DOs that are not in selection
   const dosToRemove: Element[] = [];
   Array.from(clonedLNodeType.querySelectorAll(':scope > DO')).forEach(
     doElement => {

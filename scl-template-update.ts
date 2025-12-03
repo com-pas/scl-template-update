@@ -30,7 +30,7 @@ import { MdIconButton } from '@scopedelement/material-web/iconbutton/MdIconButto
 import { CdcChildren } from '@openscd/scl-lib/dist/tDataTypeTemplates/nsdToJson.js';
 
 import { AddDataObjectDialog } from './components/add-data-object-dialog.js';
-import { DeleteDialog } from './components/delete-dialog.js';
+import { DeleteDialog } from './components/delete-lnodetype-dialog.js';
 import { LNodeTypeSidebar } from './components/lnodetype-sidebar.js';
 import { SettingsDialog, UpdateSetting } from './components/settings-dialog.js';
 import {
@@ -397,16 +397,6 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     this.saveTemplates();
   }
 
-  private handleDeleteLNodeType(): void {
-    if (!this.doc || !this.selectedLNodeType) return;
-
-    const lnID = this.selectedLNodeType.getAttribute('id');
-    this.deleteDialog.lnodeTypeId = lnID || '';
-    this.deleteDialog.message = `Are you sure you want to delete ${lnID}? This action can have severe consequences.`;
-    this.deleteDialog.onConfirm = () => this.confirmDelete();
-    this.deleteDialog.show();
-  }
-
   private confirmDelete(): void {
     if (!this.doc || !this.selectedLNodeType) return;
 
@@ -618,11 +608,11 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       </md-outlined-button>
       <md-outlined-button
         ?disabled=${!this.selectedLNodeType}
-        @click=${this.handleDeleteLNodeType}
+        @click=${() => this.deleteDialog.show()}
         class="button-delete"
       >
         <md-icon slot="icon">delete</md-icon>
-        Delete Logical Node Type
+        Delete LNode Type
       </md-outlined-button>
       <md-outlined-text-field
         id="lnodetype-desc"
@@ -651,7 +641,10 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
         ></lnodetype-sidebar>
       </div>
       ${this.renderFab()} ${this.renderWarning()} ${this.renderChoice()}
-      <delete-dialog></delete-dialog>
+      <delete-dialog
+        .lnodeTypeId=${this.selectedLNodeType?.getAttribute('id')}
+        .onConfirm=${() => this.confirmDelete()}
+      ></delete-dialog>
       <add-data-object-dialog
         .cdClasses=${cdClasses}
         .tree=${this.treeUI?.tree}
@@ -712,6 +705,13 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     .button.close {
       --md-outlined-button-label-text-color: var(--oscd-accent-red);
       --md-outlined-button-hover-label-text-color: var(--oscd-accent-red);
+    }
+
+    .button-delete {
+      --md-outlined-button-label-text-color: var(--oscd-accent-red);
+      --md-outlined-button-hover-label-text-color: var(--oscd-accent-red);
+      --md-outlined-button-focus-label-text-color: var(--oscd-accent-red);
+      --md-outlined-button-active-label-text-color: var(--oscd-accent-red);
     }
 
     .button-delete md-icon {
