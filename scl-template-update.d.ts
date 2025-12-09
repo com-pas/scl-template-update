@@ -11,6 +11,7 @@ import { MdCircularProgress } from '@scopedelement/material-web/progress/circula
 import { MdOutlinedTextField } from '@scopedelement/material-web/textfield/MdOutlinedTextField.js';
 import { MdIconButton } from '@scopedelement/material-web/iconbutton/MdIconButton.js';
 import { AddDataObjectDialog } from './components/add-data-object-dialog.js';
+import { DeleteDialog } from './components/delete-lnodetype-dialog.js';
 import { LNodeTypeSidebar } from './components/lnodetype-sidebar.js';
 import { SettingsDialog } from './components/settings-dialog.js';
 declare const NsdTemplateUpdated_base: typeof LitElement & import("@open-wc/scoped-elements/lit-element.js").ScopedElementsHostConstructor;
@@ -28,14 +29,17 @@ export default class NsdTemplateUpdated extends NsdTemplateUpdated_base {
         'md-outlined-text-field': typeof MdOutlinedTextField;
         'md-icon-button': typeof MdIconButton;
         'add-data-object-dialog': typeof AddDataObjectDialog;
+        'delete-dialog': typeof DeleteDialog;
         'lnodetype-sidebar': typeof LNodeTypeSidebar;
         'settings-dialog': typeof SettingsDialog;
     };
     doc?: XMLDocument;
+    editCount: number;
     treeUI: TreeGrid;
     lNodeTypeUI?: MdFilledSelect;
     warningDialog?: MdDialog;
     choiceDialog?: MdDialog;
+    deleteDialog: DeleteDialog;
     addDataObjectDialog: HTMLElement & {
         show: () => void;
         validateForm: () => boolean;
@@ -50,15 +54,21 @@ export default class NsdTemplateUpdated extends NsdTemplateUpdated_base {
     loading: boolean;
     fabLabel: string;
     disableAddDataObjectButton: boolean;
+    lNodeTypeDescription: string;
     updated(changedProperties: Map<string, unknown>): void;
+    private refreshSelectedLNodeType;
     private resetUI;
     private openAddDataObjectDialog;
     private showWarning;
     private closeWarningDialog;
     private closeChoiceDialog;
+    private applyDescriptionUpdate;
     private saveTemplates;
+    private showSuccessFeedback;
+    private buildUpdateEdits;
     private updateLNodeTypeDescription;
     private proceedWithDataLoss;
+    private confirmDelete;
     private handleUpdateTemplate;
     onLNodeTypeSelect(e: CustomEvent): Promise<void>;
     private addDataObjectToTree;

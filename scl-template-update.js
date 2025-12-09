@@ -38918,6 +38918,143 @@ __decorate([
 
 /**
  * @license
+ * Copyright 2023 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/**
+ * @summary Dialogs can require an action, communicate information, or help
+ * users accomplish a task. There are two types of dialogs: basic and
+ * full-screen.
+ *
+ * @description
+ * A dialog is a modal window that appears in front of app content to provide
+ * critical information or ask for a decision. Dialogs disable all app
+ * functionality when they appear, and remain on screen until confirmed,
+ * dismissed, or a required action has been taken.
+ *
+ * Dialogs are purposefully interruptive, so they should be used sparingly.
+ * A less disruptive alternative is to use a menu, which provides options
+ * without interrupting a user’s experience.
+ *
+ * On mobile devices only, complex dialogs should be displayed fullscreen.
+ *
+ * __Example usages:__
+ * - Common use cases for basic dialogs include alerts, quick selection, and
+ * confirmation.
+ * - More complex dialogs may contain actions that require a series of tasks
+ * to complete. One example is creating a calendar entry with the event title,
+ * date, location, and time.
+ *
+ * @final
+ * @suppress {visibility}
+ */
+let MdDialog = class MdDialog extends Dialog {
+};
+MdDialog.styles = [styles$m];
+MdDialog = __decorate([
+    t$1('md-dialog')
+], MdDialog);
+
+class DeleteDialog extends ScopedElementsMixin(r$4) {
+    constructor() {
+        super(...arguments);
+        this.lnodeTypeId = '';
+    }
+    get open() {
+        var _a, _b;
+        return (_b = (_a = this.dialog) === null || _a === void 0 ? void 0 : _a.open) !== null && _b !== void 0 ? _b : false;
+    }
+    show() {
+        var _a;
+        (_a = this.dialog) === null || _a === void 0 ? void 0 : _a.show();
+    }
+    close() {
+        var _a;
+        (_a = this.dialog) === null || _a === void 0 ? void 0 : _a.close();
+    }
+    handleCancel() {
+        this.close();
+    }
+    handleConfirm() {
+        this.onConfirm();
+        this.close();
+    }
+    render() {
+        return x `
+      <md-dialog>
+        <div slot="headline">Confirm delete</div>
+        <div slot="content" class="delete-content">
+          Are you sure you want to delete Logical Node Type ${this.lnodeTypeId}?
+          This action may have severe consequences.
+        </div>
+        <div slot="actions">
+          <md-outlined-button class="button close" @click="${this.handleCancel}"
+            >Cancel</md-outlined-button
+          >
+          <md-outlined-button
+            class="button delete"
+            @click="${this.handleConfirm}"
+            >Delete</md-outlined-button
+          >
+        </div>
+      </md-dialog>
+    `;
+    }
+}
+DeleteDialog.scopedElements = {
+    'md-dialog': MdDialog,
+    'md-outlined-button': MdOutlinedButton$1,
+};
+DeleteDialog.styles = i$6 `
+    * {
+      --md-sys-color-primary: var(--oscd-primary);
+      --md-sys-color-secondary: var(--oscd-secondary);
+      --md-sys-typescale-body-large-font: var(--oscd-theme-text-font);
+      --md-outlined-text-field-input-text-color: var(--oscd-base01);
+
+      --md-sys-color-surface: var(--oscd-base3);
+      --md-sys-color-on-surface: var(--oscd-base00);
+      --md-sys-color-on-primary: var(--oscd-base2);
+      --md-sys-color-on-surface-variant: var(--oscd-base00);
+      --md-menu-container-color: var(--oscd-base3);
+      font-family: var(--oscd-theme-text-font);
+      --md-sys-color-surface-container-highest: var(--oscd-base2);
+      --md-dialog-container-color: var(--oscd-base3);
+      font-family: var(--oscd-theme-text-font, 'Roboto');
+    }
+
+    md-outlined-button {
+      text-transform: uppercase;
+    }
+
+    .delete-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .button.close {
+      --md-outlined-button-label-text-color: var(--oscd-accent-red);
+      --md-outlined-button-hover-label-text-color: var(--oscd-accent-red);
+    }
+
+    .button.delete {
+      --md-outlined-button-label-text-color: var(--oscd-accent-red);
+      --md-outlined-button-hover-label-text-color: var(--oscd-accent-red);
+    }
+  `;
+__decorate([
+    n$5()
+], DeleteDialog.prototype, "onConfirm", void 0);
+__decorate([
+    n$5()
+], DeleteDialog.prototype, "lnodeTypeId", void 0);
+__decorate([
+    e$3('md-dialog')
+], DeleteDialog.prototype, "dialog", void 0);
+
+/**
+ * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -39448,45 +39585,6 @@ __decorate([
 __decorate([
     r$2()
 ], LNodeTypeSidebar.prototype, "filter", void 0);
-
-/**
- * @license
- * Copyright 2023 Google LLC
- * SPDX-License-Identifier: Apache-2.0
- */
-/**
- * @summary Dialogs can require an action, communicate information, or help
- * users accomplish a task. There are two types of dialogs: basic and
- * full-screen.
- *
- * @description
- * A dialog is a modal window that appears in front of app content to provide
- * critical information or ask for a decision. Dialogs disable all app
- * functionality when they appear, and remain on screen until confirmed,
- * dismissed, or a required action has been taken.
- *
- * Dialogs are purposefully interruptive, so they should be used sparingly.
- * A less disruptive alternative is to use a menu, which provides options
- * without interrupting a user’s experience.
- *
- * On mobile devices only, complex dialogs should be displayed fullscreen.
- *
- * __Example usages:__
- * - Common use cases for basic dialogs include alerts, quick selection, and
- * confirmation.
- * - More complex dialogs may contain actions that require a series of tasks
- * to complete. One example is creating a calendar entry with the event title,
- * date, location, and time.
- *
- * @final
- * @suppress {visibility}
- */
-let MdDialog = class MdDialog extends Dialog {
-};
-MdDialog.styles = [styles$m];
-MdDialog = __decorate([
-    t$1('md-dialog')
-], MdDialog);
 
 /**
  * @license
@@ -40321,15 +40419,38 @@ function filterSelection(tree, selection) {
     });
     return filteredTree;
 }
+/**
+ * Creates a clone of an LNodeType with only the DOs that are present in the selection.
+ * DOs not included in the selection are removed from the cloned element.
+ * @param lNodeType - The LNodeType element to filter
+ * @param selection - The tree selection containing the DO names to keep
+ * @returns A cloned LNodeType element containing only the selected DOs
+ */
+function removeDOsNotInSelection(lNodeType, selection) {
+    const clonedLNodeType = lNodeType.cloneNode(true);
+    const dosToRemove = [];
+    Array.from(clonedLNodeType.querySelectorAll(':scope > DO')).forEach(doElement => {
+        const doName = doElement.getAttribute('name');
+        if (doName && !selection[doName]) {
+            dosToRemove.push(doElement);
+        }
+    });
+    dosToRemove.forEach(doElement => {
+        clonedLNodeType.removeChild(doElement);
+    });
+    return clonedLNodeType;
+}
 
 class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
     constructor() {
         super(...arguments);
+        this.editCount = -1;
         this.lNodeTypes = [];
         this.warningMsg = '';
         this.loading = false;
         this.fabLabel = 'Update Logical Node Type';
         this.disableAddDataObjectButton = true;
+        this.lNodeTypeDescription = '';
         this.handleAddDOConfirm = (cdcType, doName, namespace) => {
             var _a;
             if (!((_a = this.addDataObjectDialog) === null || _a === void 0 ? void 0 : _a.validateForm()))
@@ -40344,6 +40465,33 @@ class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
             this.resetUI(true);
             this.lNodeTypes = getLNodeTypes(this.doc);
         }
+        if (changedProperties.has('editCount') && this.editCount >= 0) {
+            this.lNodeTypes = getLNodeTypes(this.doc);
+            this.refreshSelectedLNodeType();
+        }
+    }
+    refreshSelectedLNodeType() {
+        var _a;
+        if (!this.selectedLNodeType)
+            return;
+        const selectedId = this.selectedLNodeType.getAttribute('id');
+        const updatedLNodeType = getSelectedLNodeType(this.doc, selectedId);
+        if (!updatedLNodeType)
+            return;
+        this.selectedLNodeType = updatedLNodeType;
+        this.lNodeTypeDescription = (_a = updatedLNodeType.getAttribute('desc')) !== null && _a !== void 0 ? _a : '';
+        // Rebuild the tree to show the updated structure after undo/redo
+        const selectedLNodeTypeClass = updatedLNodeType.getAttribute('lnClass');
+        if (selectedLNodeTypeClass) {
+            const { tree } = buildLNodeTree(selectedLNodeTypeClass, updatedLNodeType, this.doc);
+            if (tree) {
+                this.lNodeTypeSelection = lNodeTypeToSelection(updatedLNodeType);
+                this.nsdSelection = this.lNodeTypeSelection;
+                this.treeUI.tree = tree;
+                this.treeUI.selection = this.lNodeTypeSelection;
+                this.treeUI.requestUpdate();
+            }
+        }
     }
     resetUI(full = false) {
         var _a;
@@ -40353,6 +40501,7 @@ class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
             this.nsdSelection = undefined;
             (_a = this.lNodeTypeUI) === null || _a === void 0 ? void 0 : _a.reset();
             this.disableAddDataObjectButton = true;
+            this.lNodeTypeDescription = '';
         }
         if (this.treeUI) {
             this.treeUI.tree = {};
@@ -40377,8 +40526,21 @@ class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
         var _a;
         (_a = this.choiceDialog) === null || _a === void 0 ? void 0 : _a.close();
     }
+    // eslint-disable-next-line class-methods-use-this
+    applyDescriptionUpdate(newLNodeType, desc, currentLNodeType) {
+        var _a;
+        const currentDesc = (_a = currentLNodeType.getAttribute('desc')) !== null && _a !== void 0 ? _a : '';
+        if (desc !== currentDesc) {
+            if (desc) {
+                newLNodeType.setAttribute('desc', desc);
+            }
+            else {
+                newLNodeType.removeAttribute('desc');
+            }
+        }
+    }
     async saveTemplates() {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d;
         if (!this.doc || !this.nsdSelection)
             return;
         const updateSetting = localStorage.getItem(TEMPLATE_UPDATE_SETTING_STORAGE_KEY) ||
@@ -40386,59 +40548,93 @@ class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
         const lnClass = this.selectedLNodeType.getAttribute('lnClass');
         const lnID = this.selectedLNodeType.getAttribute('id');
         const desc = this.lnodeTypeDesc.value;
+        const currentLNodeType = getSelectedLNodeType(this.doc, lnID);
+        if (!currentLNodeType)
+            return;
+        const currentDocumentSelection = lNodeTypeToSelection(currentLNodeType);
+        const selectionsMatch = JSON.stringify(this.nsdSelection) ===
+            JSON.stringify(currentDocumentSelection);
+        const currentDesc = (_a = currentLNodeType.getAttribute('desc')) !== null && _a !== void 0 ? _a : '';
+        const descChanged = currentDesc !== desc;
+        if (selectionsMatch) {
+            if (this.selectedLNodeType && descChanged) {
+                this.updateLNodeTypeDescription(desc);
+                this.lNodeTypes = getLNodeTypes(this.doc);
+                this.showSuccessFeedback(lnID);
+            }
+            return;
+        }
         const inserts = insertSelectedLNodeType(this.doc, this.nsdSelection, {
             class: lnClass,
             ...(!!desc && { desc }),
             data: this.treeUI.tree,
         });
-        if (inserts.length === 0) {
-            const currentDesc = (_b = (_a = this.selectedLNodeType) === null || _a === void 0 ? void 0 : _a.getAttribute('desc')) !== null && _b !== void 0 ? _b : '';
-            if (this.selectedLNodeType && currentDesc !== desc) {
-                this.updateLNodeTypeDescription(desc);
-                this.lNodeTypes = getLNodeTypes(this.doc);
-            }
-            return;
-        }
         if (updateSetting === UpdateSetting.Update) {
-            const newLNodeType = (_c = inserts.find(insert => insert.node.tagName === 'LNodeType')) === null || _c === void 0 ? void 0 : _c.node;
-            if (newLNodeType) {
-                newLNodeType.setAttribute('id', lnID);
-                const updateEdits = updateLNodeType(newLNodeType, this.doc);
-                if (updateEdits.length > 0) {
-                    this.dispatchEvent(newEditEvent(updateEdits, {
-                        title: `Update ${lnID}`,
-                    }));
-                }
+            const allEdits = this.buildUpdateEdits(inserts, currentLNodeType, lnID, desc);
+            if (allEdits.length > 0) {
+                this.dispatchEvent(newEditEvent(allEdits, {
+                    title: `Update ${lnID}`,
+                }));
             }
-            this.fabLabel = `${lnID} updated!`;
+            this.showSuccessFeedback(lnID, 'update');
         }
         else {
+            // Swap mode: Insert new, then remove old with squash
             this.dispatchEvent(newEditEvent(inserts));
             await this.updateComplete;
             const remove = removeDataType({ node: this.selectedLNodeType }, { force: true });
             this.dispatchEvent(newEditEvent(remove, { squash: true, title: `Update ${lnID}` }));
-            const updatedLNodeType = (_d = inserts.find(insert => insert.node.tagName === 'LNodeType')) === null || _d === void 0 ? void 0 : _d.node;
-            if (updatedLNodeType) {
-                const updatedLNodeTypeID = updatedLNodeType.getAttribute('id');
-                this.selectedLNodeType = updatedLNodeType;
-                await this.updateComplete;
-                if (this.lNodeTypeUI && updatedLNodeType) {
-                    this.lNodeTypeUI.value = (_e = updatedLNodeType.getAttribute('id')) !== null && _e !== void 0 ? _e : '';
-                }
-                this.fabLabel = `${updatedLNodeTypeID} swapped!`;
+            const updatedLNodeType = (_b = inserts.find(insert => insert.node.tagName === 'LNodeType')) === null || _b === void 0 ? void 0 : _b.node;
+            if (updatedLNodeType && this.lNodeTypeUI) {
+                this.lNodeTypeUI.value = (_c = updatedLNodeType.getAttribute('id')) !== null && _c !== void 0 ? _c : '';
             }
+            const updatedID = (_d = updatedLNodeType === null || updatedLNodeType === void 0 ? void 0 : updatedLNodeType.getAttribute('id')) !== null && _d !== void 0 ? _d : lnID;
+            this.showSuccessFeedback(updatedID, 'swap');
         }
         await this.updateComplete;
         this.lNodeTypes = getLNodeTypes(this.doc);
+    }
+    showSuccessFeedback(lnID, mode = 'update') {
+        this.fabLabel = mode === 'swap' ? `${lnID} swapped!` : `${lnID} updated!`;
         setTimeout(() => {
             this.fabLabel = 'Update Logical Node Type';
         }, 5000);
     }
+    buildUpdateEdits(inserts, currentLNodeType, lnID, desc) {
+        const lNodeTypeInsert = inserts.find(insert => 'node' in insert && insert.node.tagName === 'LNodeType');
+        if (lNodeTypeInsert &&
+            'node' in lNodeTypeInsert &&
+            'parent' in lNodeTypeInsert &&
+            'reference' in lNodeTypeInsert) {
+            const newLNodeType = lNodeTypeInsert.node.cloneNode(true);
+            newLNodeType.setAttribute('id', lnID);
+            this.applyDescriptionUpdate(newLNodeType, desc, currentLNodeType);
+            const supportingTypes = inserts.filter(insert => insert !== lNodeTypeInsert);
+            const removeOld = removeDataType({ node: currentLNodeType }, { force: true });
+            return [
+                ...supportingTypes,
+                {
+                    parent: lNodeTypeInsert.parent,
+                    node: newLNodeType,
+                    reference: lNodeTypeInsert.reference,
+                },
+                ...removeOld,
+            ];
+        }
+        if (inserts.length === 0) {
+            const newLNodeType = removeDOsNotInSelection(currentLNodeType, this.nsdSelection);
+            newLNodeType.setAttribute('id', lnID);
+            this.applyDescriptionUpdate(newLNodeType, desc, currentLNodeType);
+            return updateLNodeType(newLNodeType, this.doc);
+        }
+        return inserts;
+    }
     updateLNodeTypeDescription(desc) {
+        this.lNodeTypeDescription = desc;
         this.dispatchEvent(newEditEvent([
             {
                 element: this.selectedLNodeType,
-                attributes: { desc },
+                attributes: { desc: desc || null },
                 attributesNS: {},
             },
         ]));
@@ -40447,30 +40643,43 @@ class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
         this.closeChoiceDialog();
         this.saveTemplates();
     }
+    confirmDelete() {
+        if (!this.doc || !this.selectedLNodeType)
+            return;
+        const lnID = this.selectedLNodeType.getAttribute('id');
+        const remove = removeDataType({ node: this.selectedLNodeType }, { force: true });
+        this.dispatchEvent(newEditEvent(remove, { title: `Delete ${lnID}` }));
+        this.resetUI(true);
+        this.lNodeTypes = getLNodeTypes(this.doc);
+    }
     handleUpdateTemplate() {
         var _a;
         if (!this.doc || !this.selectedLNodeType)
             return;
-        this.nsdSelection = filterSelection(this.treeUI.tree, this.treeUI.selection);
-        if (JSON.stringify(this.treeUI.selection) !==
-            JSON.stringify(this.nsdSelection)) {
+        const newNsdSelection = filterSelection(this.treeUI.tree, this.treeUI.selection);
+        if (JSON.stringify(newNsdSelection) !== JSON.stringify(this.nsdSelection)) {
+            this.nsdSelection = newNsdSelection;
+        }
+        if (JSON.stringify(this.treeUI.selection) !== JSON.stringify(newNsdSelection)) {
             (_a = this.choiceDialog) === null || _a === void 0 ? void 0 : _a.show();
             return;
         }
         this.saveTemplates();
     }
     async onLNodeTypeSelect(e) {
-        var _a, _b;
+        var _a, _b, _c, _d;
         const id = (_a = e.detail) === null || _a === void 0 ? void 0 : _a.id;
         this.disableAddDataObjectButton = true;
         this.loading = true;
         this.selectedLNodeType = getSelectedLNodeType(this.doc, id);
+        this.lNodeTypeDescription =
+            (_c = (_b = this.selectedLNodeType) === null || _b === void 0 ? void 0 : _b.getAttribute('desc')) !== null && _c !== void 0 ? _c : '';
         // Let the browser render the loader before heavy work
         await new Promise(resolve => {
             setTimeout(resolve, 0);
         });
         this.resetUI(false);
-        const selectedLNodeTypeClass = (_b = this.selectedLNodeType) === null || _b === void 0 ? void 0 : _b.getAttribute('lnClass');
+        const selectedLNodeTypeClass = (_d = this.selectedLNodeType) === null || _d === void 0 ? void 0 : _d.getAttribute('lnClass');
         if (!selectedLNodeTypeClass || !this.selectedLNodeType) {
             this.loading = false;
             return;
@@ -40576,7 +40785,6 @@ class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
     </div>`;
     }
     renderLNodeTypeControls() {
-        var _a, _b;
         return x ` <div class="controls-row">
       <md-outlined-button
         ?disabled=${this.disableAddDataObjectButton}
@@ -40585,11 +40793,19 @@ class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
         <md-icon slot="icon">add</md-icon>
         Add Data Object
       </md-outlined-button>
+      <md-outlined-button
+        ?disabled=${!this.selectedLNodeType}
+        @click=${() => this.deleteDialog.show()}
+        class="button-delete"
+      >
+        <md-icon slot="icon">delete</md-icon>
+        Delete LNode Type
+      </md-outlined-button>
       <md-outlined-text-field
         id="lnodetype-desc"
         label="Description"
         ?disabled=${!this.selectedLNodeType}
-        .value=${(_b = (_a = this.selectedLNodeType) === null || _a === void 0 ? void 0 : _a.getAttribute('desc')) !== null && _b !== void 0 ? _b : ''}
+        .value=${this.lNodeTypeDescription}
       ></md-outlined-text-field>
       ${this.loading
             ? x `<md-circular-progress indeterminate></md-circular-progress>`
@@ -40597,7 +40813,7 @@ class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
     </div>`;
     }
     render() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         if (!this.doc)
             return x `<h1>Load SCL document first!</h1>`;
         return x `<div class="container">
@@ -40612,9 +40828,13 @@ class NsdTemplateUpdated extends ScopedElementsMixin(r$4) {
         ></lnodetype-sidebar>
       </div>
       ${this.renderFab()} ${this.renderWarning()} ${this.renderChoice()}
+      <delete-dialog
+        .lnodeTypeId=${(_c = this.selectedLNodeType) === null || _c === void 0 ? void 0 : _c.getAttribute('id')}
+        .onConfirm=${() => this.confirmDelete()}
+      ></delete-dialog>
       <add-data-object-dialog
         .cdClasses=${cdClasses}
-        .tree=${(_c = this.treeUI) === null || _c === void 0 ? void 0 : _c.tree}
+        .tree=${(_d = this.treeUI) === null || _d === void 0 ? void 0 : _d.tree}
         .onConfirm=${this.handleAddDOConfirm}
       ></add-data-object-dialog>
       <settings-dialog></settings-dialog>`;
@@ -40633,6 +40853,7 @@ NsdTemplateUpdated.scopedElements = {
     'md-outlined-text-field': MdOutlinedTextField,
     'md-icon-button': MdIconButton,
     'add-data-object-dialog': AddDataObjectDialog,
+    'delete-dialog': DeleteDialog,
     'lnodetype-sidebar': LNodeTypeSidebar,
     'settings-dialog': SettingsDialog,
 };
@@ -40690,6 +40911,17 @@ NsdTemplateUpdated.styles = i$6 `
       --md-outlined-button-hover-label-text-color: var(--oscd-accent-red);
     }
 
+    .button-delete {
+      --md-outlined-button-label-text-color: var(--oscd-accent-red);
+      --md-outlined-button-hover-label-text-color: var(--oscd-accent-red);
+      --md-outlined-button-focus-label-text-color: var(--oscd-accent-red);
+      --md-outlined-button-active-label-text-color: var(--oscd-accent-red);
+    }
+
+    .button-delete md-icon {
+      color: var(--oscd-accent-red);
+    }
+
     .container {
       display: grid;
       grid-template-columns: auto var(--sidebar-width);
@@ -40738,6 +40970,9 @@ __decorate([
     n$5()
 ], NsdTemplateUpdated.prototype, "doc", void 0);
 __decorate([
+    n$5({ type: Number })
+], NsdTemplateUpdated.prototype, "editCount", void 0);
+__decorate([
     e$3('tree-grid')
 ], NsdTemplateUpdated.prototype, "treeUI", void 0);
 __decorate([
@@ -40749,6 +40984,9 @@ __decorate([
 __decorate([
     e$3('#dialog-choice')
 ], NsdTemplateUpdated.prototype, "choiceDialog", void 0);
+__decorate([
+    e$3('delete-dialog')
+], NsdTemplateUpdated.prototype, "deleteDialog", void 0);
 __decorate([
     e$3('add-data-object-dialog')
 ], NsdTemplateUpdated.prototype, "addDataObjectDialog", void 0);
@@ -40782,6 +41020,9 @@ __decorate([
 __decorate([
     r$2()
 ], NsdTemplateUpdated.prototype, "disableAddDataObjectButton", void 0);
+__decorate([
+    r$2()
+], NsdTemplateUpdated.prototype, "lNodeTypeDescription", void 0);
 
 export { NsdTemplateUpdated as default };
 //# sourceMappingURL=scl-template-update.js.map
