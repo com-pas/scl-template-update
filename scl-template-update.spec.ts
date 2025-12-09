@@ -286,6 +286,148 @@ describe('NsdTemplateUpdater', () => {
       await element.updateComplete;
       expect(listener).to.have.been.called;
     });
+
+    it('does not delete LNodeType when clicking update twice with same selection', async () => {
+      localStorage.removeItem('template-update-setting');
+
+      const event = {
+        detail: { id: 'MMXU$oscd$_c53e78191fabefa3' },
+      } as CustomEvent;
+      element.onLNodeTypeSelect(event);
+      await new Promise(res => {
+        setTimeout(res, 0);
+      });
+
+      element.treeUI.selection = mmxuSelection;
+      await element.updateComplete;
+
+      // First update
+      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      await element.updateComplete;
+      expect(listener).to.have.been.calledOnce;
+
+      // Second update with same selection should not delete the LNodeType
+      listener.resetHistory();
+      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      await element.updateComplete;
+
+      // Verify LNodeType still exists in document
+      const lNodeType = element.doc?.querySelector(
+        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      );
+      expect(lNodeType).to.exist;
+    }).timeout(5000);
+
+    it('successfully removes data objects from LNodeType', async () => {
+      localStorage.removeItem('template-update-setting');
+
+      const event = {
+        detail: { id: 'MMXU$oscd$_c53e78191fabefa3' },
+      } as CustomEvent;
+      element.onLNodeTypeSelect(event);
+      await new Promise(res => {
+        setTimeout(res, 0);
+      });
+
+      // Remove the 'A' data object by not including it in selection
+      const selectionWithoutA = {
+        Beh: {
+          q: {},
+          stVal: {
+            blocked: {},
+            on: {},
+            'test/blocked': {},
+          },
+          t: {},
+        },
+      };
+
+      element.treeUI.selection = selectionWithoutA;
+      await element.updateComplete;
+
+      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      await element.updateComplete;
+
+      expect(listener).to.have.been.called;
+      const updateEdits = listener.args[0][0].detail.edit;
+      expect(updateEdits).to.have.length.greaterThan(0);
+
+      // Verify the LNodeType was updated (not deleted)
+      const lNodeType = element.doc?.querySelector(
+        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      );
+      expect(lNodeType).to.exist;
+
+      // Verify 'A' DO was removed
+      const doA = lNodeType?.querySelector('DO[name="A"]');
+      expect(doA).to.not.exist;
+
+      // Verify 'Beh' DO still exists
+      const doBeh = lNodeType?.querySelector('DO[name="Beh"]');
+      expect(doBeh).to.exist;
+    }).timeout(5000);
+
+    it('updates description when making selection changes', async () => {
+      localStorage.removeItem('template-update-setting');
+
+      const event = {
+        detail: { id: 'MMXU$oscd$_c53e78191fabefa3' },
+      } as CustomEvent;
+      element.onLNodeTypeSelect(event);
+      await new Promise(res => {
+        setTimeout(res, 0);
+      });
+
+      // Change both selection and description
+      element.treeUI.selection = mmxuSelection;
+      element.lnodeTypeDesc.value = 'Updated with new DOs';
+      await element.updateComplete;
+
+      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      await element.updateComplete;
+
+      expect(listener).to.have.been.called;
+
+      // Verify the description was updated
+      const lNodeType = element.doc?.querySelector(
+        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      );
+      expect(lNodeType?.getAttribute('desc')).to.equal('Updated with new DOs');
+    }).timeout(5000);
+
+    it('clears description when set to empty string', async () => {
+      localStorage.removeItem('template-update-setting');
+
+      const event = {
+        detail: { id: 'MMXU$oscd$_c53e78191fabefa3' },
+      } as CustomEvent;
+      element.onLNodeTypeSelect(event);
+      await new Promise(res => {
+        setTimeout(res, 0);
+      });
+
+      // First add a description
+      element.lnodeTypeDesc.value = 'Test Description';
+      await element.updateComplete;
+      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      await element.updateComplete;
+
+      listener.resetHistory();
+
+      // Now clear the description
+      element.lnodeTypeDesc.value = '';
+      await element.updateComplete;
+      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      await element.updateComplete;
+
+      expect(listener).to.have.been.called;
+
+      // Verify the description attribute was removed
+      const lNodeType = element.doc?.querySelector(
+        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      );
+      expect(lNodeType?.hasAttribute('desc')).to.be.false;
+    }).timeout(5000);
   });
 
   describe('given a document with unsupported CDC', () => {
