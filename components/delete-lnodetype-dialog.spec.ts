@@ -40,8 +40,9 @@ describe('DeleteDialog', () => {
     await deleteDialog.updateComplete;
     await deleteDialog.dialog.updateComplete;
 
-    const buttons =
-      deleteDialog.shadowRoot?.querySelectorAll('md-outlined-button');
+    const buttons = deleteDialog.shadowRoot?.querySelectorAll(
+      'oscd-outlined-button'
+    );
     const deleteButton = Array.from(buttons || []).find(
       btn => btn.textContent?.trim() === 'Delete'
     ) as HTMLElement;
@@ -75,8 +76,9 @@ describe('DeleteDialog', () => {
     deleteDialog.show();
     await deleteDialog.updateComplete;
 
-    const buttons =
-      deleteDialog.shadowRoot?.querySelectorAll('md-outlined-button');
+    const buttons = deleteDialog.shadowRoot?.querySelectorAll(
+      'oscd-outlined-button'
+    );
     const cancelButton = Array.from(buttons || []).find(
       btn => btn.textContent?.trim() === 'Cancel'
     ) as HTMLElement;

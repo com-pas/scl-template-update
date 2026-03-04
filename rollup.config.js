@@ -11,5 +11,9 @@ export default {
     dir: 'dist',
   },
   preserveEntrySignatures: 'strict',
-  plugins: [nodeResolve(), typescript(), importMetaAssets()],
+  plugins: [
+    nodeResolve(),
+    typescript(),
+    importMetaAssets()
+  ],
 };

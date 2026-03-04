@@ -2,13 +2,13 @@
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 import { LitElement, html, css } from 'lit';
 import { query, property } from 'lit/decorators.js';
-import { MdDialog } from '@scopedelement/material-web/dialog/dialog.js';
-import { MdOutlinedButton } from '@scopedelement/material-web/button/MdOutlinedButton.js';
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
+import { OscdOutlinedButton } from '@omicronenergy/oscd-ui/button/OscdOutlinedButton.js';
 
 export class DeleteDialog extends ScopedElementsMixin(LitElement) {
   static scopedElements = {
-    'md-dialog': MdDialog,
-    'md-outlined-button': MdOutlinedButton,
+    'oscd-dialog': OscdDialog,
+    'oscd-outlined-button': OscdOutlinedButton,
   };
 
   @property()
@@ -17,8 +17,8 @@ export class DeleteDialog extends ScopedElementsMixin(LitElement) {
   @property()
   lnodeTypeId: string = '';
 
-  @query('md-dialog')
-  dialog!: MdDialog;
+  @query('oscd-dialog')
+  dialog!: OscdDialog;
 
   get open() {
     return this.dialog?.open ?? false;
@@ -43,23 +43,25 @@ export class DeleteDialog extends ScopedElementsMixin(LitElement) {
 
   render() {
     return html`
-      <md-dialog>
+      <oscd-dialog>
         <div slot="headline">Confirm delete</div>
         <div slot="content" class="delete-content">
           Are you sure you want to delete Logical Node Type ${this.lnodeTypeId}?
           This action may have severe consequences.
         </div>
         <div slot="actions">
-          <md-outlined-button class="button close" @click="${this.handleCancel}"
-            >Cancel</md-outlined-button
+          <oscd-outlined-button
+            class="button close"
+            @click="${this.handleCancel}"
+            >Cancel</oscd-outlined-button
           >
-          <md-outlined-button
+          <oscd-outlined-button
             class="button delete"
             @click="${this.handleConfirm}"
-            >Delete</md-outlined-button
+            >Delete</oscd-outlined-button
           >
         </div>
-      </md-dialog>
+      </oscd-dialog>
     `;
   }
 

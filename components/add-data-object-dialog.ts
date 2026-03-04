@@ -3,12 +3,11 @@ import { LitElement, html, css } from 'lit';
 import { property, state, query } from 'lit/decorators.js';
 import { Tree, TreeNode } from '@openenergytools/tree-grid';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
-import { MdDialog } from '@scopedelement/material-web/dialog/MdDialog.js';
-import { MdOutlinedTextField } from '@scopedelement/material-web/textfield/MdOutlinedTextField.js';
-import { MdFilledSelect } from '@scopedelement/material-web/select/MdOutlineSelect.js';
-import { MdSelectOption } from '@scopedelement/material-web/select/MdSelectOption.js';
-import { MdOutlinedButton } from '@scopedelement/material-web/button/outlined-button.js';
-import { MdTextButton } from '@scopedelement/material-web/button/text-button.js';
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
+import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
+import { OscdFilledSelect } from '@omicronenergy/oscd-ui/select/OscdFilledSelect.js';
+import { OscdSelectOption } from '@omicronenergy/oscd-ui/select/OscdSelectOption.js';
+import { OscdTextButton } from '@omicronenergy/oscd-ui/button/OscdTextButton.js';
 import { debounce } from '../utils/debounce.js';
 
 // eslint-disable-next-line no-shadow
@@ -23,16 +22,15 @@ const firstTextBlockRegExp = /[A-Za-z]+/;
 
 export class AddDataObjectDialog extends ScopedElementsMixin(LitElement) {
   static scopedElements = {
-    'md-outlined-button': MdOutlinedButton,
-    'md-dialog': MdDialog,
-    'md-outlined-text-field': MdOutlinedTextField,
-    'md-text-button': MdTextButton,
-    'md-select-option': MdSelectOption,
-    'md-filled-select': MdFilledSelect,
+    'oscd-dialog': OscdDialog,
+    'oscd-outlined-text-field': OscdOutlinedTextField,
+    'oscd-text-button': OscdTextButton,
+    'oscd-select-option': OscdSelectOption,
+    'oscd-filled-select': OscdFilledSelect,
   };
 
   static styles = css`
-    md-dialog {
+    oscd-dialog {
       min-width: 350px;
     }
     .dialog-content {
@@ -41,11 +39,11 @@ export class AddDataObjectDialog extends ScopedElementsMixin(LitElement) {
       gap: 16px;
       margin-top: 8px;
     }
-    md-filled-select,
-    md-outlined-text-field {
+    oscd-filled-select,
+    oscd-outlined-text-field {
       width: 100%;
     }
-    md-text-button {
+    oscd-text-button {
       text-transform: uppercase;
     }
   `;
@@ -69,17 +67,17 @@ export class AddDataObjectDialog extends ScopedElementsMixin(LitElement) {
   @state()
   errorText = '';
 
-  @query('md-dialog')
-  createDOdialog!: MdDialog;
+  @query('oscd-dialog')
+  createDOdialog!: OscdDialog;
 
   @query('#cdc-type')
-  cdcType!: MdFilledSelect;
+  cdcType!: OscdFilledSelect;
 
   @query('#do-name')
-  doName!: MdOutlinedTextField;
+  doName!: OscdOutlinedTextField;
 
   @query('#namespace')
-  namespace!: MdOutlinedTextField;
+  namespace!: OscdOutlinedTextField;
 
   private namespaceDefaultValue = 'User-Defined';
 
@@ -251,7 +249,7 @@ export class AddDataObjectDialog extends ScopedElementsMixin(LitElement) {
 
   /* eslint-disable class-methods-use-this */
   private resetErrorText(e: Event): void {
-    const target = e.target as MdOutlinedTextField;
+    const target = e.target as OscdOutlinedTextField;
     if (target.errorText && target.checkValidity()) {
       target.errorText = '';
       target.error = false;
@@ -260,7 +258,7 @@ export class AddDataObjectDialog extends ScopedElementsMixin(LitElement) {
 
   render() {
     return html`
-      <md-dialog @closed=${this.close}>
+      <oscd-dialog @closed=${this.close}>
         <div slot="headline">Add Data Object</div>
         <form
           slot="content"
@@ -270,7 +268,7 @@ export class AddDataObjectDialog extends ScopedElementsMixin(LitElement) {
           @submit=${this.onAddDataObjectSubmit}
           @reset=${this.close}
         >
-          <md-filled-select
+          <oscd-filled-select
             class="cdc-type"
             label="Common Data Class"
             required
@@ -282,12 +280,12 @@ export class AddDataObjectDialog extends ScopedElementsMixin(LitElement) {
           >
             ${this.cdClasses.map(
               cdClass =>
-                html`<md-select-option value=${cdClass}
-                  >${cdClass}</md-select-option
+                html`<oscd-select-option value=${cdClass}
+                  >${cdClass}</oscd-select-option
                 >`
             )}
-          </md-filled-select>
-          <md-outlined-text-field
+          </oscd-filled-select>
+          <oscd-outlined-text-field
             label="Data Object Name"
             id="do-name"
             required
@@ -297,25 +295,25 @@ export class AddDataObjectDialog extends ScopedElementsMixin(LitElement) {
               this.resetErrorText(e);
               this.onValueChange();
             }}
-          ></md-outlined-text-field>
-          <md-outlined-text-field
+          ></oscd-outlined-text-field>
+          <oscd-outlined-text-field
             id="namespace"
             label="Namespace"
             placeholder=${this.namespaceDefaultValue}
             required
             .disabled=${this.isCustomNamespaceDisabled}
             @input=${this.resetErrorText}
-          ></md-outlined-text-field>
+          ></oscd-outlined-text-field>
         </form>
         <div slot="actions">
-          <md-text-button form="add-data-object" type="reset"
-            >Close</md-text-button
+          <oscd-text-button form="add-data-object" type="reset"
+            >Close</oscd-text-button
           >
-          <md-text-button form="add-data-object" type="submit"
-            >Add</md-text-button
+          <oscd-text-button form="add-data-object" type="submit"
+            >Add</oscd-text-button
           >
         </div>
-      </md-dialog>
+      </oscd-dialog>
     `;
   }
 }

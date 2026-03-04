@@ -3,17 +3,17 @@ import { LitElement, html, css } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
-import { MdOutlinedButton } from '@scopedelement/material-web/button/outlined-button.js';
-import { MdOutlinedTextField } from '@scopedelement/material-web/textfield/MdOutlinedTextField.js';
-import { MdList } from '@scopedelement/material-web/list/MdList.js';
-import { MdListItem } from '@scopedelement/material-web/list/MdListItem.js';
+import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton.js';
+import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
+import { OscdList } from '@omicronenergy/oscd-ui/list/OscdList.js';
+import { OscdListItem } from '@omicronenergy/oscd-ui/list/OscdListItem.js';
 
 export class LNodeTypeSidebar extends ScopedElementsMixin(LitElement) {
   static scopedElements = {
-    'md-outlined-button': MdOutlinedButton,
-    'md-outlined-textfield': MdOutlinedTextField,
-    'md-list': MdList,
-    'md-list-item': MdListItem,
+    'oscd-filled-button': OscdFilledButton,
+    'oscd-outlined-textfield': OscdOutlinedTextField,
+    'oscd-list': OscdList,
+    'oscd-list-item': OscdListItem,
   };
 
   @property({ type: Array })
@@ -88,13 +88,13 @@ export class LNodeTypeSidebar extends ScopedElementsMixin(LitElement) {
   render() {
     return html`<div class="sidebar">
       <div class="actions">
-        <md-filled-button class="clear-all" @click=${this.clearFilter}>
+        <oscd-filled-button class="clear-all" @click=${this.clearFilter}>
           Clear filter
-        </md-filled-button>
+        </oscd-filled-button>
       </div>
       <div class="search-filter">
         <div class="search-container">
-          <md-outlined-textfield
+          <oscd-outlined-textfield
             label="Filter Logical Node Types"
             type="text"
             placeholder="e.g.: TCTR, TVTR&amp;protection"
@@ -102,35 +102,35 @@ export class LNodeTypeSidebar extends ScopedElementsMixin(LitElement) {
             @input=${this.handleInput}
             aria-label="Filter Logical Node Types"
             supporting-text="Search by ID or description. Use commas/spaces for OR, use &amp; for AND."
-          ></md-outlined-textfield>
+          ></oscd-outlined-textfield>
         </div>
       </div>
-      <md-list>
+      <oscd-list>
         ${this.filteredLNodeTypes.map(ln => {
           const id = ln.getAttribute('id') || '';
           const desc = ln.getAttribute('desc') || '';
           const isSelected = this.selectedId === id;
           return html`
-            <md-list-item
+            <oscd-list-item
               type="button"
               ?selected=${isSelected}
               @click=${() => this.handleClick(id)}
             >
               <span slot="headline" title=${id}>${id}</span>
               <span slot="supporting-text">${desc}</span>
-            </md-list-item>
+            </oscd-list-item>
           `;
         })}
-      </md-list>
+      </oscd-list>
     </div>`;
   }
 
   updated(changedProperties: Map<string, unknown>) {
     super.updated?.(changedProperties);
-    // Scroll md-list to top when lNodeTypes changes
+    // Scroll oscd-list to top when lNodeTypes changes
     if (changedProperties.has('lNodeTypes')) {
-      const mdList = this.renderRoot.querySelector('md-list');
-      if (mdList) mdList.scrollTop = 0;
+      const oscdList = this.renderRoot.querySelector('oscd-list');
+      if (oscdList) oscdList.scrollTop = 0;
     }
   }
 
@@ -144,33 +144,33 @@ export class LNodeTypeSidebar extends ScopedElementsMixin(LitElement) {
       overflow: hidden;
       background-color: #fcf6e5;
     }
-    md-list {
+    oscd-list {
       min-height: 0;
       max-height: calc(100vh - var(--header-height) - 1rem - 134px);
       overflow-y: auto;
       scrollbar-width: thin;
       padding: 0;
     }
-    md-list::-webkit-scrollbar {
+    oscd-list::-webkit-scrollbar {
       width: 8px;
     }
-    md-list::-webkit-scrollbar-thumb {
+    oscd-list::-webkit-scrollbar-thumb {
       border-radius: 4px;
     }
-    md-list::-webkit-scrollbar-track {
+    oscd-list::-webkit-scrollbar-track {
       background: transparent;
     }
-    md-list-item {
+    oscd-list-item {
       box-sizing: border-box;
     }
-    md-list-item[selected] {
+    oscd-list-item[selected] {
       background: var(--md-sys-color-primary);
     }
-    md-list-item[selected] span[slot='headline'],
-    md-list-item[selected] span[slot='supporting-text'] {
+    oscd-list-item[selected] span[slot='headline'],
+    oscd-list-item[selected] span[slot='supporting-text'] {
       color: var(--md-sys-color-on-primary, #ffffff);
     }
-    md-outlined-textfield {
+    oscd-outlined-textfield {
       width: 100%;
     }
     .actions {
