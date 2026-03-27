@@ -41,6 +41,44 @@ export function filterSelection(
 }
 
 /**
+ * Finds and returns elements from candidateIds that are no longer referenced in
+ * the given document after edits, including those affected by cascading removals.
+ * Always provide all type IDs that existed before the edit as candidateIds, so that
+ * any new types added during the edit are not mistakenly removed.
+ */
+export function getOrphanedTypes(
+  doc: XMLDocument,
+  candidateIds: Set<string>
+): Element[] {
+  const dtt = doc.querySelector(':root > DataTypeTemplates');
+  if (!dtt) return [];
+
+  const dttClone = dtt.cloneNode(true) as Element;
+  const toRemove: string[] = [];
+
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const id of candidateIds) {
+      if (!toRemove.includes(id)) {
+        if (!dttClone.querySelector(`:scope *[type="${id}"]`)) {
+          const el = dttClone.querySelector(`:scope > *[id="${id}"]`);
+          if (el) {
+            toRemove.push(id);
+            el.remove();
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+
+  return toRemove
+    .map(id => dtt.querySelector(`:scope > *[id="${id}"]`))
+    .filter((el): el is Element => el !== null);
+}
+
+/**
  * Creates a clone of an LNodeType with only the DOs that are present in the selection.
  * DOs not included in the selection are removed from the cloned element.
  * @param lNodeType - The LNodeType element to filter

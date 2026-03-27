@@ -44,6 +44,7 @@ import {
   isLNodeTypeReferenced,
   filterSelection,
   removeDOsNotInSelection,
+  getOrphanedTypes,
 } from './foundation/utils.js';
 
 export default class NsdTemplateUpdated extends ScopedElementsMixin(
@@ -255,6 +256,15 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     });
 
     if (updateSetting === UpdateSetting.Update) {
+      const oldCandidateIds = new Set(
+        Array.from(
+          this.doc.querySelectorAll(
+            ':root > DataTypeTemplates > DOType, :root > DataTypeTemplates > DAType, :root > DataTypeTemplates > EnumType'
+          )
+        )
+          .map(el => el.getAttribute('id')!)
+          .filter(Boolean)
+      );
       const allEdits = this.buildUpdateEdits(
         inserts,
         currentLNodeType,
@@ -268,6 +278,19 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
             title: `Update ${lnID}`,
           })
         );
+
+        const orphaned = getOrphanedTypes(this.doc, oldCandidateIds);
+        if (orphaned.length > 0) {
+          this.dispatchEvent(
+            newEditEvent(
+              orphaned.map(node => ({ node })),
+              {
+                squash: true,
+                title: `Update ${lnID}`,
+              }
+            )
+          );
+        }
       }
 
       this.showSuccessFeedback(lnID, 'update');
@@ -337,10 +360,6 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       const supportingTypes = inserts.filter(
         insert => insert !== lNodeTypeInsert
       );
-      const removeOld = removeDataType(
-        { node: currentLNodeType },
-        { force: true }
-      );
 
       return [
         ...supportingTypes,
@@ -349,7 +368,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
           node: newLNodeType,
           reference: lNodeTypeInsert.reference,
         },
-        ...removeOld,
+        { node: currentLNodeType },
       ];
     }
 

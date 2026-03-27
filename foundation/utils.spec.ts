@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-expressions */
 import { expect } from '@open-wc/testing';
-import { removeDOsNotInSelection } from './utils.js';
+import { removeDOsNotInSelection, getOrphanedTypes } from './utils.js';
 
 describe('foundation/utils', () => {
   describe('removeDOsNotInSelection', () => {
@@ -83,6 +83,77 @@ describe('foundation/utils', () => {
       expect(result.getAttribute('id')).to.equal('TestLNodeType');
       expect(result.getAttribute('lnClass')).to.equal('MMXU');
       expect(result.tagName).to.equal('LNodeType');
+    });
+  });
+
+  describe('getOrphanedTypes', () => {
+    it('returns candidates that are unreferenced in the document', () => {
+      // Post-edit doc: LNodeType only has Beh — A and its chain are orphaned
+      const doc = new DOMParser().parseFromString(
+        `<SCL xmlns="http://www.iec.ch/61850/2003/SCL">
+          <DataTypeTemplates>
+            <LNodeType id="TestLN" lnClass="MMXU">
+              <DO name="Beh" type="DOType_Beh"/>
+            </LNodeType>
+            <DOType id="DOType_Beh" cdc="ENS"/>
+            <DOType id="DOType_A" cdc="WYE">
+              <SDO name="sub" type="DOType_Sub"/>
+            </DOType>
+            <DOType id="DOType_Sub" cdc="CMV"/>
+          </DataTypeTemplates>
+        </SCL>`,
+        'application/xml'
+      );
+      const candidates = new Set(['DOType_A', 'DOType_Sub', 'DOType_Beh']);
+      const orphaned = getOrphanedTypes(doc, candidates);
+      const orphanedIds = orphaned.map(el => el.getAttribute('id'));
+
+      // DOType_A is unreferenced → orphaned
+      expect(orphanedIds).to.include('DOType_A');
+      // DOType_Sub was only referenced by DOType_A → cascade orphan
+      expect(orphanedIds).to.include('DOType_Sub');
+      // DOType_Beh is still referenced by the LNodeType → NOT orphaned
+      expect(orphanedIds).to.not.include('DOType_Beh');
+    });
+
+    it('does not return types still referenced by other LNodeTypes', () => {
+      // Two LNodeTypes share DOType_Shared; one is removed but the other remains
+      const doc = new DOMParser().parseFromString(
+        `<SCL xmlns="http://www.iec.ch/61850/2003/SCL">
+          <DataTypeTemplates>
+            <LNodeType id="LN_Kept" lnClass="MMXU">
+              <DO name="X" type="DOType_Shared"/>
+            </LNodeType>
+            <DOType id="DOType_Removed" cdc="ENS"/>
+            <DOType id="DOType_Shared" cdc="SPS"/>
+          </DataTypeTemplates>
+        </SCL>`,
+        'application/xml'
+      );
+      const candidates = new Set(['DOType_Removed', 'DOType_Shared']);
+      const orphaned = getOrphanedTypes(doc, candidates);
+      const orphanedIds = orphaned.map(el => el.getAttribute('id'));
+
+      expect(orphanedIds).to.include('DOType_Removed');
+      expect(orphanedIds).to.not.include('DOType_Shared');
+    });
+
+    it('returns empty array when all candidates are still referenced', () => {
+      const doc = new DOMParser().parseFromString(
+        `<SCL xmlns="http://www.iec.ch/61850/2003/SCL">
+          <DataTypeTemplates>
+            <LNodeType id="TestLN" lnClass="MMXU">
+              <DO name="A" type="DOType_A"/>
+            </LNodeType>
+            <DOType id="DOType_A" cdc="WYE"/>
+          </DataTypeTemplates>
+        </SCL>`,
+        'application/xml'
+      );
+      const candidates = new Set(['DOType_A']);
+      const orphaned = getOrphanedTypes(doc, candidates);
+
+      expect(orphaned).to.have.lengthOf(0);
     });
   });
 });

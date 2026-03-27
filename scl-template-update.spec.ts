@@ -88,13 +88,45 @@ describe('NsdTemplateUpdater', () => {
       (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
       await element.updateComplete;
 
-      expect(listener).to.have.been.calledOnce;
+      expect(listener).to.have.been.called;
       const updateEdits = listener.args[0][0].detail.edit;
       expect(updateEdits).to.have.length.greaterThan(0);
 
       expect(listener.args[0][0].detail.title).to.equal(
         'Update MMXU$oscd$_c53e78191fabefa3'
       );
+    }).timeout(5000);
+
+    it('preserves DOTypes still referenced by the updated LNodeType', async () => {
+      localStorage.removeItem('template-update-setting');
+
+      const event = {
+        detail: { id: 'MMXU$oscd$_c53e78191fabefa3' },
+      } as CustomEvent;
+      element.onLNodeTypeSelect(event);
+      await new Promise(res => {
+        setTimeout(res, 0);
+      });
+
+      element.treeUI.selection = mmxuSelection;
+      await element.updateComplete;
+
+      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      await element.updateComplete;
+
+      // The updated LNodeType must still carry DO[name="A"] and its referenced
+      // DOType must still exist — i.e. the document must be schema-valid.
+      const updatedLNodeType = element.doc?.querySelector(
+        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      );
+      expect(updatedLNodeType).to.exist;
+      expect(updatedLNodeType?.querySelector('DO[name="A"]')).to.exist;
+
+      const aDoTypeId = updatedLNodeType
+        ?.querySelector('DO[name="A"]')
+        ?.getAttribute('type');
+      expect(aDoTypeId).to.exist;
+      expect(element.doc?.querySelector(`DOType[id="${aDoTypeId}"]`)).to.exist;
     }).timeout(5000);
 
     it('swaps MMXU when swap mode is configured', async () => {
@@ -162,7 +194,7 @@ describe('NsdTemplateUpdater', () => {
         setTimeout(res, 200);
       });
 
-      expect(listener).to.have.been.calledOnce;
+      expect(listener).to.have.been.called;
       const updateEdits = listener.args[0][0].detail.edit;
       expect(updateEdits).to.have.length.greaterThan(0);
 
@@ -304,7 +336,7 @@ describe('NsdTemplateUpdater', () => {
       // First update
       (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
       await element.updateComplete;
-      expect(listener).to.have.been.calledOnce;
+      expect(listener).to.have.been.called;
 
       // Second update with same selection should not delete the LNodeType
       listener.resetHistory();
@@ -365,6 +397,12 @@ describe('NsdTemplateUpdater', () => {
       // Verify 'Beh' DO still exists
       const doBeh = lNodeType?.querySelector('DO[name="Beh"]');
       expect(doBeh).to.exist;
+
+      // Verify the DOType that was exclusively used by the removed DO A is
+      // cleaned up as an orphan (targeted post-edit cleanup).
+      expect(
+        element.doc?.querySelector('DOType[id="A$oscd$_41824603f63b26ac"]')
+      ).to.not.exist;
     }).timeout(5000);
 
     it('updates description when making selection changes', async () => {
