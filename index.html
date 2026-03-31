@@ -14,14 +14,40 @@
     />
   </head>
   <body>
-    <open-scd
-      plugins='{"editor": [{"name": "Template Update", "icon": "copy_all", "active": true, "src": "/dist/scl-template-update.js"}, {"name": "Template Generator", "translations": {"de": "Template Generator"}, "icon": "add_box", "active": true, "src": "/dist/oscd-template-generator.js"}, {"name": "Template Editor", "translations": {"de": "Template Editor"}, "icon": "edit", "active": true, "src": "https://openscd.github.io/plugins/src/editors/Templates.js"}], "menu": [{"name": "Open File", "translations": {"de": "Datei öffnen"}, "icon": "folder_open", "active": true, "src": "https://openscd.github.io/oscd-open/oscd-open.js"}, {"name": "Save File", "translations": {"de": "Datei öffnen"}, "icon": "save", "active": true, "src": "https://openscd.github.io/oscd-save/oscd-save.js"}]}'
-    ></open-scd>
+    <oscd-shell></oscd-shell>
 
     <script type="module">
-      import '@openenergytools/open-scd-core/open-scd.js';
+      import '@omicronenergy/oscd-shell/oscd-shell.js';
 
-      const editor = document.querySelector('open-scd');
+      const editor = document.querySelector('oscd-shell');
+
+      editor.plugins = {
+        editor: [
+          {
+            name: 'Template Update',
+            icon: 'copy_all',
+            active: true,
+            src: '/dist/scl-template-update.js',
+          },
+        ],
+        menu: [
+          {
+            name: 'Open File',
+            translations: { de: 'Datei öffnen' },
+            icon: 'folder_open',
+            active: true,
+            src: 'https://openscd.github.io/oscd-open/oscd-open.js',
+          },
+          {
+            name: 'Save File',
+            translations: { de: 'Datei speichern' },
+            icon: 'save',
+            active: true,
+            src: 'https://openscd.github.io/oscd-save/oscd-save.js',
+          },
+        ],
+      };
+
       const params = new URL(document.location).searchParams;
       for (const [name, value] of params) {
         editor.setAttribute(name, value);

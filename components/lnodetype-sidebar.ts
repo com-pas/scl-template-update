@@ -142,7 +142,7 @@ export class LNodeTypeSidebar extends ScopedElementsMixin(LitElement) {
       min-height: 0;
       padding: 1rem;
       overflow: hidden;
-      background-color: #fcf6e5;
+      background-color: var(--oscd-base3);
     }
     oscd-list {
       min-height: 0;
