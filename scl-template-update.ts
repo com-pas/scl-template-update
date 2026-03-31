@@ -42,6 +42,7 @@ import {
   isLNodeTypeReferenced,
   filterSelection,
   removeDOsNotInSelection,
+  computeOrphanedRemoves,
 } from './foundation/utils.js';
 
 export default class NsdTemplateUpdated extends ScopedElementsMixin(
@@ -263,14 +264,18 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
 
       this.showSuccessFeedback(lnID, 'update');
     } else {
-      // Swap mode: Insert new, then remove old with squash
+      // Swap mode: Insert new, then remove old LNodeType and orphaned types with squash
+      const dataTypeTemplates =
+        this.selectedLNodeType!.closest('DataTypeTemplates')!;
+      const remove = computeOrphanedRemoves(
+        dataTypeTemplates,
+        this.selectedLNodeType!.getAttribute('id')!,
+        inserts.map(i => (i as { node: Node }).node as Element)
+      );
+
       this.dispatchEvent(newEditEventV2(inserts));
       await this.updateComplete;
 
-      const remove = removeDataType(
-        { node: this.selectedLNodeType! },
-        { force: true }
-      );
       this.dispatchEvent(
         newEditEventV2(remove, { squash: true, title: `Update ${lnID}` })
       );
@@ -324,10 +329,12 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       const supportingTypes = inserts.filter(
         insert => insert !== lNodeTypeInsert
       );
-      const removeOld = removeDataType(
-        { node: currentLNodeType },
-        { force: true }
-      );
+
+      const dataTypeTemplates = currentLNodeType.closest('DataTypeTemplates')!;
+      const removeOld = computeOrphanedRemoves(dataTypeTemplates, lnID, [
+        newLNodeType,
+        ...(supportingTypes as { node: Element }[]).map(i => i.node),
+      ]);
 
       return [
         ...supportingTypes,

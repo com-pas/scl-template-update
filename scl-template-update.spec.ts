@@ -372,19 +372,14 @@ describe('NsdTemplateUpdater', () => {
       const updateEdits = listener.args[0][0].detail.edit;
       expect(updateEdits).to.have.length.greaterThan(0);
 
-      // Verify the LNodeType was updated (not deleted)
-      const lNodeType = element.doc?.querySelector(
-        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      // Verify that the new LNodeType node should not contain 'A' but should contain 'Beh'
+      const lNodeTypeInsert = updateEdits.find(
+        (e: any) => 'node' in e && e.node.tagName === 'LNodeType'
       );
-      expect(lNodeType).to.exist;
-
-      // Verify 'A' DO was removed
-      const doA = lNodeType?.querySelector('DO[name="A"]');
-      expect(doA).to.not.exist;
-
-      // Verify 'Beh' DO still exists
-      const doBeh = lNodeType?.querySelector('DO[name="Beh"]');
-      expect(doBeh).to.exist;
+      expect(lNodeTypeInsert).to.exist;
+      const newLNodeType = lNodeTypeInsert.node as Element;
+      expect(newLNodeType.querySelector('DO[name="A"]')).to.not.exist;
+      expect(newLNodeType.querySelector('DO[name="Beh"]')).to.exist;
     }).timeout(5000);
 
     it('updates description when making selection changes', async () => {
@@ -412,11 +407,17 @@ describe('NsdTemplateUpdater', () => {
 
       expect(listener).to.have.been.called;
 
-      // Verify the description was updated
-      const lNodeType = element.doc?.querySelector(
-        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      // Verify that description should appear either in the inserted LNodeType node
+      // or as an attribute update, depending on whether the selection changed
+      const edits = listener.args[0][0].detail.edit;
+      const hasDescUpdate = edits.some(
+        (e: any) =>
+          ('attributes' in e && e.attributes.desc === 'Updated with new DOs') ||
+          ('node' in e &&
+            (e.node as Element).tagName === 'LNodeType' &&
+            (e.node as Element).getAttribute('desc') === 'Updated with new DOs')
       );
-      expect(lNodeType?.getAttribute('desc')).to.equal('Updated with new DOs');
+      expect(hasDescUpdate).to.be.true;
     }).timeout(5000);
 
     it('clears description when set to empty string', async () => {
@@ -440,6 +441,8 @@ describe('NsdTemplateUpdater', () => {
       ).click();
       await element.updateComplete;
 
+      // Simulate the edit being applied to the document (normally done by an external editor)
+      element.selectedLNodeType?.setAttribute('desc', 'Test Description');
       listener.resetHistory();
 
       // Now clear the description
@@ -454,11 +457,17 @@ describe('NsdTemplateUpdater', () => {
 
       expect(listener).to.have.been.called;
 
-      // Verify the description attribute was removed
-      const lNodeType = element.doc?.querySelector(
-        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      // Verify that description should be cleared, either as a null attribute update
+      // or the inserted LNodeType node should lack the desc attribute
+      const edits = listener.args[0][0].detail.edit;
+      const hasDescClear = edits.some(
+        (e: any) =>
+          ('attributes' in e && e.attributes.desc === null) ||
+          ('node' in e &&
+            (e.node as Element).tagName === 'LNodeType' &&
+            !(e.node as Element).hasAttribute('desc'))
       );
-      expect(lNodeType?.hasAttribute('desc')).to.be.false;
+      expect(hasDescClear).to.be.true;
     }).timeout(5000);
   });
 
