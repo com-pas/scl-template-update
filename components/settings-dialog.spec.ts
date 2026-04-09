@@ -7,7 +7,7 @@ describe('SettingsDialog', () => {
   let element: SettingsDialog;
 
   const getRadio = (value: 'update' | 'swap') =>
-    element.shadowRoot!.querySelector(`md-radio[value="${value}"]`) as any;
+    element.shadowRoot!.querySelector(`oscd-radio[value="${value}"]`) as any;
 
   beforeEach(async () => {
     localStorage.clear();
@@ -53,7 +53,7 @@ describe('SettingsDialog', () => {
     await element.updateComplete;
 
     const confirmButton = element.shadowRoot!.querySelector(
-      'md-text-button:last-child'
+      'oscd-text-button:last-child'
     ) as any;
     confirmButton.click();
 
@@ -68,7 +68,7 @@ describe('SettingsDialog', () => {
     await element.updateComplete;
 
     const cancelButton = element.shadowRoot!.querySelector(
-      'md-text-button:first-child'
+      'oscd-text-button:first-child'
     ) as any;
     cancelButton.click();
 

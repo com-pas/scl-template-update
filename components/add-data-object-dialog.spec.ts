@@ -44,9 +44,10 @@ describe('AddDataObjectDialog', () => {
   it('renders dialog', () => {
     expect(dialog.createDOdialog.open).to.be.false;
     dialog.show();
-    expect(dialog.shadowRoot?.querySelector('md-dialog')).to.exist;
-    expect(dialog.shadowRoot?.querySelector('md-filled-select')).to.exist;
-    expect(dialog.shadowRoot?.querySelector('md-outlined-text-field')).to.exist;
+    expect(dialog.shadowRoot?.querySelector('oscd-dialog')).to.exist;
+    expect(dialog.shadowRoot?.querySelector('oscd-filled-select')).to.exist;
+    expect(dialog.shadowRoot?.querySelector('oscd-outlined-text-field')).to
+      .exist;
     cdClasses.forEach(cdClass => {
       expect(dialog.shadowRoot?.textContent).to.include(cdClass);
     });

@@ -2,9 +2,9 @@
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 import { LitElement, html, css } from 'lit';
 import { query, state } from 'lit/decorators.js';
-import { MdDialog } from '@scopedelement/material-web/dialog/dialog.js';
-import { MdTextButton } from '@scopedelement/material-web/button/text-button.js';
-import { MdRadio } from '@scopedelement/material-web/radio/radio.js';
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
+import { OscdTextButton } from '@omicronenergy/oscd-ui/button/OscdTextButton.js';
+import { OscdRadio } from '@omicronenergy/oscd-ui/radio/OscdRadio.js';
 import { TEMPLATE_UPDATE_SETTING_STORAGE_KEY } from '../foundation/constants.js';
 
 // eslint-disable-next-line no-shadow
@@ -15,13 +15,13 @@ export enum UpdateSetting {
 
 export class SettingsDialog extends ScopedElementsMixin(LitElement) {
   static scopedElements = {
-    'md-dialog': MdDialog,
-    'md-text-button': MdTextButton,
-    'md-radio': MdRadio,
+    'oscd-dialog': OscdDialog,
+    'oscd-text-button': OscdTextButton,
+    'oscd-radio': OscdRadio,
   };
 
-  @query('md-dialog')
-  dialog!: MdDialog;
+  @query('oscd-dialog')
+  dialog!: OscdDialog;
 
   @state()
   private updateSetting: UpdateSetting = UpdateSetting.Update;
@@ -63,7 +63,7 @@ export class SettingsDialog extends ScopedElementsMixin(LitElement) {
   }
 
   private handleRadioChange(event: Event) {
-    const target = event.target as MdRadio;
+    const target = event.target as OscdRadio;
     if (target.checked) {
       this.updateSetting = target.value as UpdateSetting;
     }
@@ -81,44 +81,44 @@ export class SettingsDialog extends ScopedElementsMixin(LitElement) {
 
   render() {
     return html`
-      <md-dialog @closed=${() => this.dialog?.close()}>
+      <oscd-dialog @closed=${() => this.dialog?.close()}>
         <div slot="headline">LNodeType update behaviour</div>
         <div slot="content">
           <div class="radio-group">
             <label class="radio-item">
-              <md-radio
+              <oscd-radio
                 name="update-setting"
                 value=${UpdateSetting.Update}
                 .checked=${this.updateSetting === UpdateSetting.Update}
                 @change=${this.handleRadioChange}
-              ></md-radio>
+              ></oscd-radio>
               <span class="radio-label">Update logical node type </span>
             </label>
             <label class="radio-item">
-              <md-radio
+              <oscd-radio
                 name="update-setting"
                 value=${UpdateSetting.Swap}
                 .checked=${this.updateSetting === UpdateSetting.Swap}
                 @change=${this.handleRadioChange}
-              ></md-radio>
+              ></oscd-radio>
               <span class="radio-label">Swap logical node type </span>
             </label>
           </div>
         </div>
         <div slot="actions">
-          <md-text-button @click=${this.handleCancel} type="button">
+          <oscd-text-button @click=${this.handleCancel} type="button">
             Cancel
-          </md-text-button>
-          <md-text-button @click=${this.handleConfirm} type="button">
+          </oscd-text-button>
+          <oscd-text-button @click=${this.handleConfirm} type="button">
             Save
-          </md-text-button>
+          </oscd-text-button>
         </div>
-      </md-dialog>
+      </oscd-dialog>
     `;
   }
 
   static styles = css`
-    md-dialog {
+    oscd-dialog {
       --md-dialog-container-max-width: 400px;
     }
 
@@ -147,7 +147,7 @@ export class SettingsDialog extends ScopedElementsMixin(LitElement) {
       flex: 1;
     }
 
-    md-text-button {
+    oscd-text-button {
       text-transform: uppercase;
     }
   `;

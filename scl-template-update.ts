@@ -4,7 +4,8 @@ import { state, query, property } from 'lit/decorators.js';
 
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
-import { newEditEvent, Edit } from '@openenergytools/open-scd-core';
+import { newEditEventV2 } from '@openscd/oscd-api/utils.js';
+import { EditV2 } from '@openscd/oscd-api';
 
 import {
   insertSelectedLNodeType,
@@ -17,16 +18,13 @@ import {
 
 import { TreeGrid, TreeSelection } from '@openenergytools/tree-grid';
 
-import { MdFilledButton } from '@scopedelement/material-web/button/MdFilledButton.js';
-import { MdOutlinedButton } from '@scopedelement/material-web/button/MdOutlinedButton.js';
-import { MdDialog } from '@scopedelement/material-web/dialog/MdDialog.js';
-import { MdFab } from '@scopedelement/material-web/fab/MdFab.js';
-import { MdIcon } from '@scopedelement/material-web/icon/MdIcon.js';
-import { MdFilledSelect } from '@scopedelement/material-web/select/MdFilledSelect.js';
-import { MdSelectOption } from '@scopedelement/material-web/select/MdSelectOption.js';
-import { MdCircularProgress } from '@scopedelement/material-web/progress/circular-progress.js';
-import { MdOutlinedTextField } from '@scopedelement/material-web/textfield/MdOutlinedTextField.js';
-import { MdIconButton } from '@scopedelement/material-web/iconbutton/MdIconButton.js';
+import { OscdOutlinedButton } from '@omicronenergy/oscd-ui/button/OscdOutlinedButton.js';
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
+import { OscdFab } from '@omicronenergy/oscd-ui/fab/OscdFab.js';
+import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
+import { OscdCircularProgress } from '@omicronenergy/oscd-ui/progress/OscdCircularProgress.js';
+import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
+import { OscdIconButton } from '@omicronenergy/oscd-ui/iconbutton/OscdIconButton.js';
 import { CdcChildren } from '@openscd/scl-lib/dist/tDataTypeTemplates/nsdToJson.js';
 
 import { AddDataObjectDialog } from './components/add-data-object-dialog.js';
@@ -44,6 +42,7 @@ import {
   isLNodeTypeReferenced,
   filterSelection,
   removeDOsNotInSelection,
+  computeOrphanedRemoves,
 } from './foundation/utils.js';
 
 export default class NsdTemplateUpdated extends ScopedElementsMixin(
@@ -51,16 +50,13 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
 ) {
   static scopedElements = {
     'tree-grid': TreeGrid,
-    'md-filled-select': MdFilledSelect,
-    'md-select-option': MdSelectOption,
-    'md-fab': MdFab,
-    'md-icon': MdIcon,
-    'md-dialog': MdDialog,
-    'md-filled-button': MdFilledButton,
-    'md-outlined-button': MdOutlinedButton,
-    'md-circular-progress': MdCircularProgress,
-    'md-outlined-text-field': MdOutlinedTextField,
-    'md-icon-button': MdIconButton,
+    'oscd-fab': OscdFab,
+    'oscd-icon': OscdIcon,
+    'oscd-dialog': OscdDialog,
+    'oscd-outlined-button': OscdOutlinedButton,
+    'oscd-circular-progress': OscdCircularProgress,
+    'oscd-outlined-text-field': OscdOutlinedTextField,
+    'oscd-icon-button': OscdIconButton,
     'add-data-object-dialog': AddDataObjectDialog,
     'delete-dialog': DeleteDialog,
     'lnodetype-sidebar': LNodeTypeSidebar,
@@ -76,14 +72,11 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
   @query('tree-grid')
   treeUI!: TreeGrid;
 
-  @query('md-filled-select')
-  lNodeTypeUI?: MdFilledSelect;
-
   @query('#dialog-warning')
-  warningDialog?: MdDialog;
+  warningDialog?: OscdDialog;
 
   @query('#dialog-choice')
-  choiceDialog?: MdDialog;
+  choiceDialog?: OscdDialog;
 
   @query('delete-dialog')
   deleteDialog!: DeleteDialog;
@@ -98,7 +91,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
   settingsDialog!: SettingsDialog;
 
   @query('#lnodetype-desc')
-  lnodeTypeDesc!: MdOutlinedTextField;
+  lnodeTypeDesc!: OscdOutlinedTextField;
 
   @state()
   lNodeTypes: Element[] = [];
@@ -174,7 +167,6 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       this.selectedLNodeType = undefined;
       this.lNodeTypeSelection = undefined;
       this.nsdSelection = undefined;
-      this.lNodeTypeUI?.reset();
       this.disableAddDataObjectButton = true;
       this.lNodeTypeDescription = '';
     }
@@ -264,7 +256,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
 
       if (allEdits.length > 0) {
         this.dispatchEvent(
-          newEditEvent(allEdits, {
+          newEditEventV2(allEdits, {
             title: `Update ${lnID}`,
           })
         );
@@ -272,25 +264,25 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
 
       this.showSuccessFeedback(lnID, 'update');
     } else {
-      // Swap mode: Insert new, then remove old with squash
-      this.dispatchEvent(newEditEvent(inserts));
+      // Swap mode: Insert new, then remove old LNodeType and orphaned types with squash
+      const dataTypeTemplates =
+        this.selectedLNodeType!.closest('DataTypeTemplates')!;
+      const remove = computeOrphanedRemoves(
+        dataTypeTemplates,
+        this.selectedLNodeType!.getAttribute('id')!,
+        inserts.map(i => (i as { node: Node }).node as Element)
+      );
+
+      this.dispatchEvent(newEditEventV2(inserts));
       await this.updateComplete;
 
-      const remove = removeDataType(
-        { node: this.selectedLNodeType! },
-        { force: true }
-      );
       this.dispatchEvent(
-        newEditEvent(remove, { squash: true, title: `Update ${lnID}` })
+        newEditEventV2(remove, { squash: true, title: `Update ${lnID}` })
       );
 
       const updatedLNodeType = inserts.find(
         insert => (insert.node as Element).tagName === 'LNodeType'
       )?.node as Element;
-
-      if (updatedLNodeType && this.lNodeTypeUI) {
-        this.lNodeTypeUI.value = updatedLNodeType.getAttribute('id') ?? '';
-      }
 
       const updatedID = updatedLNodeType?.getAttribute('id') ?? lnID;
       this.showSuccessFeedback(updatedID, 'swap');
@@ -311,11 +303,11 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
   }
 
   private buildUpdateEdits(
-    inserts: Edit[],
+    inserts: EditV2[],
     currentLNodeType: Element,
     lnID: string,
     desc: string
-  ): Edit[] {
+  ): EditV2[] {
     const lNodeTypeInsert = inserts.find(
       insert =>
         'node' in insert && (insert.node as Element).tagName === 'LNodeType'
@@ -337,10 +329,12 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       const supportingTypes = inserts.filter(
         insert => insert !== lNodeTypeInsert
       );
-      const removeOld = removeDataType(
-        { node: currentLNodeType },
-        { force: true }
-      );
+
+      const dataTypeTemplates = currentLNodeType.closest('DataTypeTemplates')!;
+      const removeOld = computeOrphanedRemoves(dataTypeTemplates, lnID, [
+        newLNodeType,
+        ...(supportingTypes as { node: Element }[]).map(i => i.node),
+      ]);
 
       return [
         ...supportingTypes,
@@ -371,7 +365,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
   private updateLNodeTypeDescription(desc: string): void {
     this.lNodeTypeDescription = desc;
     this.dispatchEvent(
-      newEditEvent([
+      newEditEventV2([
         {
           element: this.selectedLNodeType!,
           attributes: { desc: desc || null },
@@ -395,7 +389,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       { force: true }
     );
 
-    this.dispatchEvent(newEditEvent(remove, { title: `Delete ${lnID}` }));
+    this.dispatchEvent(newEditEventV2(remove, { title: `Delete ${lnID}` }));
 
     this.resetUI(true);
     this.lNodeTypes = getLNodeTypes(this.doc);
@@ -528,86 +522,87 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
 
   // eslint-disable-next-line class-methods-use-this
   renderWarning(): TemplateResult {
-    return html`<md-dialog id="dialog-warning">
+    return html`<oscd-dialog id="dialog-warning">
       <div slot="headline">Warning</div>
       <form slot="content" id="form-id" method="dialog">
         ${this.warningMsg}
       </form>
       <div slot="actions">
-        <md-outlined-button
+        <oscd-outlined-button
           class="button close"
           form="form-id"
           @click="${this.closeWarningDialog}"
-          >Close</md-outlined-button
+          >Close</oscd-outlined-button
         >
       </div>
-    </md-dialog>`;
+    </oscd-dialog>`;
   }
 
   renderChoice(): TemplateResult {
-    return html`<md-dialog id="dialog-choice">
+    return html`<oscd-dialog id="dialog-choice">
       <div slot="headline">Warning: Data loss</div>
       <form slot="content" id="form-id" method="dialog">
         The logical node has additional data object not defined in the NSD.
         Updating will lead to loss of data! Do you still want to proceed?
       </form>
       <div slot="actions">
-        <md-outlined-button
+        <oscd-outlined-button
           class="button close"
           form="form-id"
           @click="${this.closeChoiceDialog}"
-          >Cancel</md-outlined-button
+          >Cancel</oscd-outlined-button
         >
-        <md-outlined-button
+        <oscd-outlined-button
           class="button proceed"
           form="form-id"
           @click="${this.proceedWithDataLoss}"
-          >Proceed</md-outlined-button
+          >Proceed</oscd-outlined-button
         >
       </div>
-    </md-dialog>`;
+    </oscd-dialog>`;
   }
 
   renderFab(): TemplateResult {
     const disabled =
       !this.treeUI?.tree || Object.keys(this.treeUI?.tree).length === 0;
     return html`<div class="fab-container">
-      <md-icon-button @click=${() => this.settingsDialog.show()}>
-        <md-icon>settings</md-icon> </md-icon-button
-      ><md-fab
+      <oscd-icon-button @click=${() => this.settingsDialog.show()}>
+        <oscd-icon>settings</oscd-icon></oscd-icon-button
+      ><oscd-fab
+        data-testid="update-fab"
         label="${this.fabLabel}"
         class="update-lnode-type"
         ?disabled="${disabled}"
         @click=${this.handleUpdateTemplate}
-      ></md-fab>
+      ></oscd-fab>
     </div>`;
   }
 
   renderLNodeTypeControls(): TemplateResult {
     return html` <div class="controls-row">
-      <md-outlined-button
+      <oscd-outlined-button
         ?disabled=${this.disableAddDataObjectButton}
         @click=${this.openAddDataObjectDialog}
       >
-        <md-icon slot="icon">add</md-icon>
+        <oscd-icon slot="icon">add</oscd-icon>
         Add Data Object
-      </md-outlined-button>
-      <md-outlined-button
+      </oscd-outlined-button>
+      <oscd-outlined-button
         ?disabled=${!this.selectedLNodeType}
         @click=${() => this.deleteDialog.show()}
         class="button-delete"
       >
-        <md-icon slot="icon">delete</md-icon>
+        <oscd-icon slot="icon">delete</oscd-icon>
         Delete LNode Type
-      </md-outlined-button>
-      <md-outlined-text-field
+      </oscd-outlined-button>
+      <oscd-outlined-text-field
         id="lnodetype-desc"
         label="Description"
         ?disabled=${!this.selectedLNodeType}
         .value=${this.lNodeTypeDescription}
-      ></md-outlined-text-field>
+      ></oscd-outlined-text-field>
       ${this.loading
-        ? html`<md-circular-progress indeterminate></md-circular-progress>`
+        ? html`<oscd-circular-progress indeterminate></oscd-circular-progress>`
         : ``}
     </div>`;
   }
@@ -680,27 +675,27 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       line-height: 48px;
     }
 
-    md-outlined-button {
+    oscd-outlined-button {
       text-transform: uppercase;
     }
 
-    md-icon {
+    oscd-icon {
       font-family: var(--oscd-theme-icon-font, 'Material Symbols Outlined');
     }
 
     .button.close {
-      --md-outlined-button-label-text-color: var(--oscd-accent-red);
-      --md-outlined-button-hover-label-text-color: var(--oscd-accent-red);
+      --oscd-outlined-button-label-text-color: var(--oscd-accent-red);
+      --oscd-outlined-button-hover-label-text-color: var(--oscd-accent-red);
     }
 
     .button-delete {
-      --md-outlined-button-label-text-color: var(--oscd-accent-red);
-      --md-outlined-button-hover-label-text-color: var(--oscd-accent-red);
-      --md-outlined-button-focus-label-text-color: var(--oscd-accent-red);
-      --md-outlined-button-active-label-text-color: var(--oscd-accent-red);
+      --oscd-outlined-button-label-text-color: var(--oscd-accent-red);
+      --oscd-outlined-button-hover-label-text-color: var(--oscd-accent-red);
+      --oscd-outlined-button-focus-label-text-color: var(--oscd-accent-red);
+      --oscd-outlined-button-active-label-text-color: var(--oscd-accent-red);
     }
 
-    .button-delete md-icon {
+    .button-delete oscd-icon {
       color: var(--oscd-accent-red);
     }
 

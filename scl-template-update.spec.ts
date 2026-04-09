@@ -1,11 +1,8 @@
-/* eslint-disable import/no-duplicates */
 /* eslint-disable no-unused-expressions */
 import { fixture, expect, html, waitUntil } from '@open-wc/testing';
 import { restore, SinonSpy, spy } from 'sinon';
 
-import '@openenergytools/open-scd-core/open-scd.js';
-import { OpenSCD } from '@openenergytools/open-scd-core/open-scd.js';
-import { Insert, newOpenEvent, Remove } from '@openenergytools/open-scd-core';
+import { Insert, Remove } from '@openscd/oscd-api';
 
 import {
   extension,
@@ -15,43 +12,24 @@ import {
   nsdSpeced,
   customDataObjectInvalidCDC,
 } from './scl-template-update.testfiles.js';
-import './scl-template-update.js';
 import NsdTemplateUpdated from './scl-template-update.js';
 
-const plugins = {
-  editor: [
-    {
-      name: 'Update Template',
-      translations: {
-        de: 'Update Template',
-      },
-      icon: 'edit',
-      active: true,
-      requireDoc: false,
-      src: '/dist/scl-template-update.js',
-    },
-  ],
-};
+customElements.define('scl-template-update', NsdTemplateUpdated);
 
 describe('NsdTemplateUpdater', () => {
-  let openSCD: OpenSCD;
   let element: NsdTemplateUpdated;
   beforeEach(async () => {
-    openSCD = await fixture(
-      html`<open-scd plugins="${JSON.stringify(plugins)}"></open-scd>`
+    element = await fixture<NsdTemplateUpdated>(
+      html`<scl-template-update></scl-template-update>`
     );
-    await new Promise(res => {
-      setTimeout(res, 200);
-    });
-    element = openSCD.shadowRoot?.querySelector(
-      'oscd-p837a28e71799d7bc'
-    ) as NsdTemplateUpdated;
   });
 
   it('shows notification without loaded doc', () => {
     expect(element.shadowRoot?.querySelector('h1')).to.exist;
     expect(element.shadowRoot?.querySelector('tree-grid')).to.not.exist;
-    expect(element.shadowRoot?.querySelector('md-fab')).to.not.exist;
+    expect(
+      element.shadowRoot?.querySelector('oscd-fab[data-testid="update-fab"]')
+    ).to.not.exist;
   });
 
   describe('given a nsd specced document', () => {
@@ -59,16 +37,19 @@ describe('NsdTemplateUpdater', () => {
     afterEach(restore);
     beforeEach(async () => {
       listener = spy();
-      openSCD.addEventListener('oscd-edit-v2', listener);
-      const doc = new DOMParser().parseFromString(nsdSpeced, 'application/xml');
-      openSCD.dispatchEvent(newOpenEvent(doc, 'SomeDoc'));
+      element.addEventListener('oscd-edit-v2', listener);
+      element.doc = new DOMParser().parseFromString(
+        nsdSpeced,
+        'application/xml'
+      );
+      await element.updateComplete;
       await new Promise(res => {
         setTimeout(res, 200);
       });
     });
 
     it('displays an action button', () =>
-      expect(element.shadowRoot?.querySelector('md-fab')).to.exist);
+      expect(element.shadowRoot?.querySelector('oscd-fab')).to.exist);
 
     it('updates MMXU on action button click', async () => {
       // Test the default 'update' behavior
@@ -85,7 +66,11 @@ describe('NsdTemplateUpdater', () => {
       element.treeUI.selection = mmxuSelection;
       await element.updateComplete;
 
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
 
       expect(listener).to.have.been.calledOnce;
@@ -111,7 +96,11 @@ describe('NsdTemplateUpdater', () => {
       element.treeUI.selection = mmxuSelection;
       await element.updateComplete;
 
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
 
       const inserts = listener.args[0][0].detail.edit;
@@ -157,7 +146,11 @@ describe('NsdTemplateUpdater', () => {
       element.treeUI.selection = lln0Selection; // change selection
       await element.updateComplete;
 
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await new Promise(res => {
         setTimeout(res, 200);
       });
@@ -179,7 +172,11 @@ describe('NsdTemplateUpdater', () => {
       element.onLNodeTypeSelect(event);
       await element.updateComplete;
 
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await new Promise(res => {
         setTimeout(res, 200);
       });
@@ -206,9 +203,12 @@ describe('NsdTemplateUpdater', () => {
     afterEach(restore);
     beforeEach(async () => {
       listener = spy();
-      openSCD.addEventListener('oscd-edit-v2', listener);
-      const doc = new DOMParser().parseFromString(extension, 'application/xml');
-      openSCD.dispatchEvent(newOpenEvent(doc, 'SomeDoc'));
+      element.addEventListener('oscd-edit-v2', listener);
+      element.doc = new DOMParser().parseFromString(
+        extension,
+        'application/xml'
+      );
+      await element.updateComplete;
       await new Promise(res => {
         setTimeout(res, 200);
       });
@@ -256,7 +256,11 @@ describe('NsdTemplateUpdater', () => {
       element.treeUI.selection = mmxuExceptSelection;
       await element.updateComplete;
 
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
 
       (
@@ -282,7 +286,11 @@ describe('NsdTemplateUpdater', () => {
       element.lnodeTypeDesc.value = 'New Description';
       await element.updateComplete;
 
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
       expect(listener).to.have.been.called;
     });
@@ -302,13 +310,21 @@ describe('NsdTemplateUpdater', () => {
       await element.updateComplete;
 
       // First update
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
       expect(listener).to.have.been.calledOnce;
 
       // Second update with same selection should not delete the LNodeType
       listener.resetHistory();
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
 
       // Verify LNodeType still exists in document
@@ -345,26 +361,25 @@ describe('NsdTemplateUpdater', () => {
       element.treeUI.selection = selectionWithoutA;
       await element.updateComplete;
 
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
 
       expect(listener).to.have.been.called;
       const updateEdits = listener.args[0][0].detail.edit;
       expect(updateEdits).to.have.length.greaterThan(0);
 
-      // Verify the LNodeType was updated (not deleted)
-      const lNodeType = element.doc?.querySelector(
-        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      // Verify that the new LNodeType node should not contain 'A' but should contain 'Beh'
+      const lNodeTypeInsert = updateEdits.find(
+        (e: any) => 'node' in e && e.node.tagName === 'LNodeType'
       );
-      expect(lNodeType).to.exist;
-
-      // Verify 'A' DO was removed
-      const doA = lNodeType?.querySelector('DO[name="A"]');
-      expect(doA).to.not.exist;
-
-      // Verify 'Beh' DO still exists
-      const doBeh = lNodeType?.querySelector('DO[name="Beh"]');
-      expect(doBeh).to.exist;
+      expect(lNodeTypeInsert).to.exist;
+      const newLNodeType = lNodeTypeInsert.node as Element;
+      expect(newLNodeType.querySelector('DO[name="A"]')).to.not.exist;
+      expect(newLNodeType.querySelector('DO[name="Beh"]')).to.exist;
     }).timeout(5000);
 
     it('updates description when making selection changes', async () => {
@@ -383,16 +398,26 @@ describe('NsdTemplateUpdater', () => {
       element.lnodeTypeDesc.value = 'Updated with new DOs';
       await element.updateComplete;
 
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
 
       expect(listener).to.have.been.called;
 
-      // Verify the description was updated
-      const lNodeType = element.doc?.querySelector(
-        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      // Verify that description should appear either in the inserted LNodeType node
+      // or as an attribute update, depending on whether the selection changed
+      const edits = listener.args[0][0].detail.edit;
+      const hasDescUpdate = edits.some(
+        (e: any) =>
+          ('attributes' in e && e.attributes.desc === 'Updated with new DOs') ||
+          ('node' in e &&
+            (e.node as Element).tagName === 'LNodeType' &&
+            (e.node as Element).getAttribute('desc') === 'Updated with new DOs')
       );
-      expect(lNodeType?.getAttribute('desc')).to.equal('Updated with new DOs');
+      expect(hasDescUpdate).to.be.true;
     }).timeout(5000);
 
     it('clears description when set to empty string', async () => {
@@ -409,40 +434,55 @@ describe('NsdTemplateUpdater', () => {
       // First add a description
       element.lnodeTypeDesc.value = 'Test Description';
       await element.updateComplete;
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
 
+      // Simulate the edit being applied to the document (normally done by an external editor)
+      element.selectedLNodeType?.setAttribute('desc', 'Test Description');
       listener.resetHistory();
 
       // Now clear the description
       element.lnodeTypeDesc.value = '';
       await element.updateComplete;
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
 
       expect(listener).to.have.been.called;
 
-      // Verify the description attribute was removed
-      const lNodeType = element.doc?.querySelector(
-        'LNodeType[id="MMXU$oscd$_c53e78191fabefa3"]'
+      // Verify that description should be cleared, either as a null attribute update
+      // or the inserted LNodeType node should lack the desc attribute
+      const edits = listener.args[0][0].detail.edit;
+      const hasDescClear = edits.some(
+        (e: any) =>
+          ('attributes' in e && e.attributes.desc === null) ||
+          ('node' in e &&
+            (e.node as Element).tagName === 'LNodeType' &&
+            !(e.node as Element).hasAttribute('desc'))
       );
-      expect(lNodeType?.hasAttribute('desc')).to.be.false;
+      expect(hasDescClear).to.be.true;
     }).timeout(5000);
   });
 
   describe('given a document with unsupported CDC', () => {
     afterEach(restore);
     beforeEach(async () => {
-      openSCD.addEventListener('oscd-edit-v2', () => {});
-      const doc = new DOMParser().parseFromString(
+      element.addEventListener('oscd-edit-v2', () => {});
+      element.doc = new DOMParser().parseFromString(
         customDataObjectInvalidCDC,
         'application/xml'
       );
-      openSCD.dispatchEvent(newOpenEvent(doc, 'SomeDoc'));
+      await element.updateComplete;
       await new Promise(res => {
         setTimeout(res, 200);
       });
-      await element.updateComplete;
       const treeUI = element.shadowRoot?.querySelector('tree-grid') as any;
       if (treeUI) {
         treeUI.tree = {};
@@ -462,7 +502,11 @@ describe('NsdTemplateUpdater', () => {
       element.treeUI.selection = mmxuSelection;
       await element.updateComplete;
 
-      (element.shadowRoot?.querySelector('md-fab') as HTMLElement).click();
+      (
+        element.shadowRoot?.querySelector(
+          'oscd-fab[data-testid="update-fab"]'
+        ) as HTMLElement
+      ).click();
       await element.updateComplete;
 
       expect(element.warningDialog?.getAttribute('open')).to.not.be.null;
