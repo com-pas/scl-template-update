@@ -1,15 +1,15 @@
 import { LitElement } from 'lit';
-import { MdDialog } from '@scopedelement/material-web/dialog/dialog.js';
-import { MdOutlinedButton } from '@scopedelement/material-web/button/MdOutlinedButton.js';
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
+import { OscdOutlinedButton } from '@omicronenergy/oscd-ui/button/OscdOutlinedButton.js';
 declare const DeleteDialog_base: typeof LitElement & import("@open-wc/scoped-elements/lit-element.js").ScopedElementsHostConstructor;
 export declare class DeleteDialog extends DeleteDialog_base {
     static scopedElements: {
-        'md-dialog': typeof MdDialog;
-        'md-outlined-button': typeof MdOutlinedButton;
+        'oscd-dialog': typeof OscdDialog;
+        'oscd-outlined-button': typeof OscdOutlinedButton;
     };
     onConfirm: () => void;
     lnodeTypeId: string;
-    dialog: MdDialog;
+    dialog: OscdDialog;
     get open(): boolean;
     show(): void;
     close(): void;

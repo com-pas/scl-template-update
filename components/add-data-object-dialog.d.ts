@@ -1,20 +1,18 @@
 import { LitElement } from 'lit';
 import { TreeNode } from '@openenergytools/tree-grid';
-import { MdDialog } from '@scopedelement/material-web/dialog/MdDialog.js';
-import { MdOutlinedTextField } from '@scopedelement/material-web/textfield/MdOutlinedTextField.js';
-import { MdFilledSelect } from '@scopedelement/material-web/select/MdOutlineSelect.js';
-import { MdSelectOption } from '@scopedelement/material-web/select/MdSelectOption.js';
-import { MdOutlinedButton } from '@scopedelement/material-web/button/outlined-button.js';
-import { MdTextButton } from '@scopedelement/material-web/button/text-button.js';
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
+import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
+import { OscdFilledSelect } from '@omicronenergy/oscd-ui/select/OscdFilledSelect.js';
+import { OscdSelectOption } from '@omicronenergy/oscd-ui/select/OscdSelectOption.js';
+import { OscdTextButton } from '@omicronenergy/oscd-ui/button/OscdTextButton.js';
 declare const AddDataObjectDialog_base: typeof LitElement & import("@open-wc/scoped-elements/lit-element.js").ScopedElementsHostConstructor;
 export declare class AddDataObjectDialog extends AddDataObjectDialog_base {
     static scopedElements: {
-        'md-outlined-button': typeof MdOutlinedButton;
-        'md-dialog': typeof MdDialog;
-        'md-outlined-text-field': typeof MdOutlinedTextField;
-        'md-text-button': typeof MdTextButton;
-        'md-select-option': typeof MdSelectOption;
-        'md-filled-select': typeof MdFilledSelect;
+        'oscd-dialog': typeof OscdDialog;
+        'oscd-outlined-text-field': typeof OscdOutlinedTextField;
+        'oscd-text-button': typeof OscdTextButton;
+        'oscd-select-option': typeof OscdSelectOption;
+        'oscd-filled-select': typeof OscdFilledSelect;
     };
     static styles: import("lit").CSSResult;
     tree: Partial<Record<string, TreeNode>>;
@@ -22,10 +20,10 @@ export declare class AddDataObjectDialog extends AddDataObjectDialog_base {
     onConfirm?: (cdcType: string, doName: string, namespace: string | null) => void;
     open: boolean;
     errorText: string;
-    createDOdialog: MdDialog;
-    cdcType: MdFilledSelect;
-    doName: MdOutlinedTextField;
-    namespace: MdOutlinedTextField;
+    createDOdialog: OscdDialog;
+    cdcType: OscdFilledSelect;
+    doName: OscdOutlinedTextField;
+    namespace: OscdOutlinedTextField;
     private namespaceDefaultValue;
     private validationDebounceDelay;
     private isCustomNamespaceDisabled;

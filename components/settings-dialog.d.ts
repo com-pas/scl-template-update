@@ -1,7 +1,7 @@
 import { LitElement } from 'lit';
-import { MdDialog } from '@scopedelement/material-web/dialog/dialog.js';
-import { MdTextButton } from '@scopedelement/material-web/button/text-button.js';
-import { MdRadio } from '@scopedelement/material-web/radio/radio.js';
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
+import { OscdTextButton } from '@omicronenergy/oscd-ui/button/OscdTextButton.js';
+import { OscdRadio } from '@omicronenergy/oscd-ui/radio/OscdRadio.js';
 export declare enum UpdateSetting {
     Swap = "swap",
     Update = "update"
@@ -9,11 +9,11 @@ export declare enum UpdateSetting {
 declare const SettingsDialog_base: typeof LitElement & import("@open-wc/scoped-elements/lit-element.js").ScopedElementsHostConstructor;
 export declare class SettingsDialog extends SettingsDialog_base {
     static scopedElements: {
-        'md-dialog': typeof MdDialog;
-        'md-text-button': typeof MdTextButton;
-        'md-radio': typeof MdRadio;
+        'oscd-dialog': typeof OscdDialog;
+        'oscd-text-button': typeof OscdTextButton;
+        'oscd-radio': typeof OscdRadio;
     };
-    dialog: MdDialog;
+    dialog: OscdDialog;
     private updateSetting;
     connectedCallback(): void;
     private loadSettings;

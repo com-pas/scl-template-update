@@ -1,15 +1,12 @@
 import { LitElement, TemplateResult } from 'lit';
 import { TreeGrid, TreeSelection } from '@openenergytools/tree-grid';
-import { MdFilledButton } from '@scopedelement/material-web/button/MdFilledButton.js';
-import { MdOutlinedButton } from '@scopedelement/material-web/button/MdOutlinedButton.js';
-import { MdDialog } from '@scopedelement/material-web/dialog/MdDialog.js';
-import { MdFab } from '@scopedelement/material-web/fab/MdFab.js';
-import { MdIcon } from '@scopedelement/material-web/icon/MdIcon.js';
-import { MdFilledSelect } from '@scopedelement/material-web/select/MdFilledSelect.js';
-import { MdSelectOption } from '@scopedelement/material-web/select/MdSelectOption.js';
-import { MdCircularProgress } from '@scopedelement/material-web/progress/circular-progress.js';
-import { MdOutlinedTextField } from '@scopedelement/material-web/textfield/MdOutlinedTextField.js';
-import { MdIconButton } from '@scopedelement/material-web/iconbutton/MdIconButton.js';
+import { OscdOutlinedButton } from '@omicronenergy/oscd-ui/button/OscdOutlinedButton.js';
+import { OscdDialog } from '@omicronenergy/oscd-ui/dialog/OscdDialog.js';
+import { OscdFab } from '@omicronenergy/oscd-ui/fab/OscdFab.js';
+import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
+import { OscdCircularProgress } from '@omicronenergy/oscd-ui/progress/OscdCircularProgress.js';
+import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
+import { OscdIconButton } from '@omicronenergy/oscd-ui/iconbutton/OscdIconButton.js';
 import { AddDataObjectDialog } from './components/add-data-object-dialog.js';
 import { DeleteDialog } from './components/delete-lnodetype-dialog.js';
 import { LNodeTypeSidebar } from './components/lnodetype-sidebar.js';
@@ -18,16 +15,13 @@ declare const NsdTemplateUpdated_base: typeof LitElement & import("@open-wc/scop
 export default class NsdTemplateUpdated extends NsdTemplateUpdated_base {
     static scopedElements: {
         'tree-grid': typeof TreeGrid;
-        'md-filled-select': typeof MdFilledSelect;
-        'md-select-option': typeof MdSelectOption;
-        'md-fab': typeof MdFab;
-        'md-icon': typeof MdIcon;
-        'md-dialog': typeof MdDialog;
-        'md-filled-button': typeof MdFilledButton;
-        'md-outlined-button': typeof MdOutlinedButton;
-        'md-circular-progress': typeof MdCircularProgress;
-        'md-outlined-text-field': typeof MdOutlinedTextField;
-        'md-icon-button': typeof MdIconButton;
+        'oscd-fab': typeof OscdFab;
+        'oscd-icon': typeof OscdIcon;
+        'oscd-dialog': typeof OscdDialog;
+        'oscd-outlined-button': typeof OscdOutlinedButton;
+        'oscd-circular-progress': typeof OscdCircularProgress;
+        'oscd-outlined-text-field': typeof OscdOutlinedTextField;
+        'oscd-icon-button': typeof OscdIconButton;
         'add-data-object-dialog': typeof AddDataObjectDialog;
         'delete-dialog': typeof DeleteDialog;
         'lnodetype-sidebar': typeof LNodeTypeSidebar;
@@ -36,16 +30,15 @@ export default class NsdTemplateUpdated extends NsdTemplateUpdated_base {
     doc?: XMLDocument;
     editCount: number;
     treeUI: TreeGrid;
-    lNodeTypeUI?: MdFilledSelect;
-    warningDialog?: MdDialog;
-    choiceDialog?: MdDialog;
+    warningDialog?: OscdDialog;
+    choiceDialog?: OscdDialog;
     deleteDialog: DeleteDialog;
     addDataObjectDialog: HTMLElement & {
         show: () => void;
         validateForm: () => boolean;
     };
     settingsDialog: SettingsDialog;
-    lnodeTypeDesc: MdOutlinedTextField;
+    lnodeTypeDesc: OscdOutlinedTextField;
     lNodeTypes: Element[];
     selectedLNodeType?: Element;
     lNodeTypeSelection?: TreeSelection;

@@ -1,15 +1,15 @@
 import { LitElement } from 'lit';
-import { MdOutlinedButton } from '@scopedelement/material-web/button/outlined-button.js';
-import { MdOutlinedTextField } from '@scopedelement/material-web/textfield/MdOutlinedTextField.js';
-import { MdList } from '@scopedelement/material-web/list/MdList.js';
-import { MdListItem } from '@scopedelement/material-web/list/MdListItem.js';
+import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton.js';
+import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
+import { OscdList } from '@omicronenergy/oscd-ui/list/OscdList.js';
+import { OscdListItem } from '@omicronenergy/oscd-ui/list/OscdListItem.js';
 declare const LNodeTypeSidebar_base: typeof LitElement & import("@open-wc/scoped-elements/lit-element.js").ScopedElementsHostConstructor;
 export declare class LNodeTypeSidebar extends LNodeTypeSidebar_base {
     static scopedElements: {
-        'md-outlined-button': typeof MdOutlinedButton;
-        'md-outlined-textfield': typeof MdOutlinedTextField;
-        'md-list': typeof MdList;
-        'md-list-item': typeof MdListItem;
+        'oscd-filled-button': typeof OscdFilledButton;
+        'oscd-outlined-textfield': typeof OscdOutlinedTextField;
+        'oscd-list': typeof OscdList;
+        'oscd-list-item': typeof OscdListItem;
     };
     lNodeTypes: Element[];
     selectedId?: string;
