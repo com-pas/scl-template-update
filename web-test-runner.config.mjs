@@ -1,11 +1,12 @@
 // import { playwrightLauncher } from '@web/test-runner-playwright';
 import { polyfill } from '@web/dev-server-polyfill';
+import { esbuildPlugin } from '@web/dev-server-esbuild';
 
 const filteredLogs = ['Running in dev mode', 'lit-html is in dev mode'];
 
 export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
   /** Test files to run */
-  files: 'dist/**/*.spec.js',
+  files: ['**/*.spec.ts', '!node_modules/**'],
   testRunnerHtml: testFramework => `
   <html>
     <head>
@@ -22,8 +23,8 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
       }
       </style>
       <style>
-      * { -webkit-font-smoothing: none; 
-       font-kerning: none; 
+      * { -webkit-font-smoothing: none;
+       font-kerning: none;
        text-rendering: geometricPrecision;
        font-variant-ligatures: none;
        letter-spacing: 0.01em;}
@@ -59,7 +60,7 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
         padding: 0px;
         --mdc-icon-font: 'Material Symbols Outlined';
       }
-  
+
       body {
         background: white;
       }
@@ -83,6 +84,7 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
   },
 
   plugins: [
+    esbuildPlugin({ ts: true, tsconfig: './tsconfig.json' }),
     polyfill({
       scopedCustomElementRegistry: true,
     }),
