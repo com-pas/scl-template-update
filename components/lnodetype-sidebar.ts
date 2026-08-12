@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, PropertyValues } from 'lit';
 import { property, state } from 'lit/decorators.js';
 import { ScopedElementsMixin } from '@open-wc/scoped-elements/lit-element.js';
 
@@ -25,7 +25,25 @@ export class LNodeTypeSidebar extends ScopedElementsMixin(LitElement) {
   @state()
   filter: string = '';
 
+  private sortedLNodeTypes: Element[] = [];
+
   private debounceTimer?: number;
+
+  private static sortLNodeTypes(nodes: Element[]): Element[] {
+    return [...nodes].sort((a, b) => {
+      const aId = a.getAttribute('id')?.toLowerCase() || '';
+      const bId = b.getAttribute('id')?.toLowerCase() || '';
+      return aId.localeCompare(bId);
+    });
+  }
+
+  protected willUpdate(changedProperties: PropertyValues<this>) {
+    super.willUpdate(changedProperties);
+
+    if (changedProperties.has('lNodeTypes')) {
+      this.sortedLNodeTypes = LNodeTypeSidebar.sortLNodeTypes(this.lNodeTypes);
+    }
+  }
 
   private handleInput(e: Event) {
     const { value } = e.target as HTMLInputElement;
@@ -50,7 +68,9 @@ export class LNodeTypeSidebar extends ScopedElementsMixin(LitElement) {
   }
 
   get filteredLNodeTypes(): Element[] {
-    if (!this.filter.trim()) return this.lNodeTypes;
+    const sortedLNTypes = this.sortedLNodeTypes;
+
+    if (!this.filter.trim()) return sortedLNTypes;
     // If the filter includes words separated by &, treat as a single AND group (e.g. 'a & b', 'a&b', 'a &b', 'a& b').
     // Otherwise, split on comma or space (unless adjacent to &), so 'a b' and 'a,b' are separate OR groups.
     let groups: string[][] = [];
@@ -74,9 +94,9 @@ export class LNodeTypeSidebar extends ScopedElementsMixin(LitElement) {
         .filter(group => group.length > 0);
     }
 
-    if (groups.length === 0) return this.lNodeTypes;
+    if (groups.length === 0) return sortedLNTypes;
 
-    return this.lNodeTypes.filter(ln => {
+    return sortedLNTypes.filter(ln => {
       const id = ln.getAttribute('id')?.toLowerCase() || '';
       const desc = ln.getAttribute('desc')?.toLowerCase() || '';
       return groups.some(group =>
@@ -123,15 +143,6 @@ export class LNodeTypeSidebar extends ScopedElementsMixin(LitElement) {
         })}
       </oscd-list>
     </div>`;
-  }
-
-  updated(changedProperties: Map<string, unknown>) {
-    super.updated?.(changedProperties);
-    // Scroll oscd-list to top when lNodeTypes changes
-    if (changedProperties.has('lNodeTypes')) {
-      const oscdList = this.renderRoot.querySelector('oscd-list');
-      if (oscdList) oscdList.scrollTop = 0;
-    }
   }
 
   static styles = css`

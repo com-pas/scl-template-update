@@ -1,6 +1,11 @@
 /* eslint-disable no-unused-expressions */
 import { expect } from '@open-wc/testing';
-import { removeDOsNotInSelection, computeOrphanedRemoves } from './utils.js';
+import {
+  removeDOsNotInSelection,
+  computeOrphanedRemoves,
+  getMissingMandatoryFields,
+  getEmptyReferencedElements,
+} from './utils.js';
 import { nsdSpeced } from '../scl-template-update.testfiles.js';
 
 describe('foundation/utils', () => {
@@ -163,6 +168,251 @@ describe('foundation/utils', () => {
       expect((result[0] as any).node as Element).to.equal(
         dataTypeTemplates.querySelector(`LNodeType[id="${mmxuId}"]`)
       );
+    });
+  });
+
+  describe('getMissingMandatoryFields', () => {
+    const tree: any = {
+      ReqDO: {
+        presCond: 'M',
+        children: {
+          stVal: {
+            mandatory: true,
+            children: {
+              q: {
+                mandatory: true,
+              },
+            },
+          },
+          optionalField: {
+            mandatory: false,
+          },
+        },
+      },
+      OptDO: {
+        presCond: 'O',
+        children: {
+          requiredUnderOptionalDo: {
+            mandatory: true,
+          },
+        },
+      },
+    };
+
+    it('returns missing mandatory subfields for present DOs', () => {
+      const selection = {
+        ReqDO: {},
+      };
+
+      const missing = getMissingMandatoryFields(tree, selection);
+
+      expect(missing).to.deep.equal([
+        {
+          path: ['ReqDO', 'stVal'],
+          kind: 'subfield',
+        },
+      ]);
+    });
+
+    it('returns no missing mandatory subfields for optional DOs missing in file', () => {
+      const selection = {
+        ReqDO: {
+          stVal: {
+            q: {},
+          },
+        },
+      };
+
+      const missing = getMissingMandatoryFields(tree, selection);
+
+      expect(missing).to.deep.equal([]);
+    });
+
+    it('returns deeper missing mandatory subfields for present branches', () => {
+      const selection = {
+        ReqDO: {
+          stVal: {},
+        },
+      };
+
+      const missing = getMissingMandatoryFields(tree, selection);
+
+      expect(missing).to.deep.equal([
+        {
+          path: ['ReqDO', 'stVal', 'q'],
+          kind: 'subfield',
+        },
+      ]);
+    });
+
+    it('returns missing fields sorted alphabetically by path', () => {
+      const unorderedTree: any = {
+        ReqDO: {
+          children: {
+            zField: { mandatory: true },
+            aField: { mandatory: true },
+          },
+        },
+      };
+
+      const selection = {
+        ReqDO: {},
+      };
+
+      const missing = getMissingMandatoryFields(unorderedTree, selection);
+
+      expect(missing.map(field => field.path.join('/'))).to.deep.equal([
+        'ReqDO/aField',
+        'ReqDO/zField',
+      ]);
+    });
+  });
+
+  describe('getEmptyReferencedElements', () => {
+    it('returns empty referenced DAType elements', () => {
+      const doc = new DOMParser().parseFromString(
+        `<SCL xmlns="http://www.iec.ch/61850/2003/SCL"><DataTypeTemplates>
+          <LNodeType id="RBRF1" lnClass="RBRF">
+            <DO name="DetValA" type="DetValAType" />
+          </LNodeType>
+          <DOType id="DetValAType" cdc="ASG">
+            <DA name="setMag" bType="Struct" fc="SE" type="setMagType" />
+          </DOType>
+          <DAType id="setMagType" />
+        </DataTypeTemplates></SCL>`,
+        'application/xml'
+      );
+
+      const lNodeType = doc.querySelector('LNodeType')!;
+
+      expect(getEmptyReferencedElements(lNodeType)).to.deep.equal([
+        {
+          tagName: 'DAType',
+          id: 'setMagType',
+          referencePath: 'DetValA.setMag',
+        },
+      ]);
+    });
+
+    it('does not return non-empty DAType elements', () => {
+      const doc = new DOMParser().parseFromString(
+        `<SCL xmlns="http://www.iec.ch/61850/2003/SCL"><DataTypeTemplates>
+          <LNodeType id="RBRF1" lnClass="RBRF">
+            <DO name="DetValA" type="DetValAType" />
+          </LNodeType>
+          <DOType id="DetValAType" cdc="ASG">
+            <DA name="setMag" bType="Struct" fc="SE" type="setMagType" />
+          </DOType>
+          <DAType id="setMagType">
+            <BDA name="f" bType="FLOAT32" />
+          </DAType>
+        </DataTypeTemplates></SCL>`,
+        'application/xml'
+      );
+
+      const lNodeType = doc.querySelector('LNodeType')!;
+
+      expect(getEmptyReferencedElements(lNodeType)).to.deep.equal([]);
+    });
+
+    it('reports empty referenced DOType elements', () => {
+      const doc = new DOMParser().parseFromString(
+        `<SCL xmlns="http://www.iec.ch/61850/2003/SCL"><DataTypeTemplates>
+          <LNodeType id="RBRF1" lnClass="RBRF">
+            <DO name="EmptyDo" type="EmptyDoType" />
+          </LNodeType>
+          <DOType id="EmptyDoType" cdc="ASG" />
+        </DataTypeTemplates></SCL>`,
+        'application/xml'
+      );
+
+      const lNodeType = doc.querySelector('LNodeType')!;
+
+      expect(getEmptyReferencedElements(lNodeType)).to.deep.equal([
+        {
+          tagName: 'DOType',
+          id: 'EmptyDoType',
+          referencePath: 'EmptyDo',
+        },
+      ]);
+    });
+
+    it('returns empty referenced EnumType elements', () => {
+      const doc = new DOMParser().parseFromString(
+        `<SCL xmlns="http://www.iec.ch/61850/2003/SCL"><DataTypeTemplates>
+          <LNodeType id="RBRF1" lnClass="RBRF">
+            <DO name="Mod" type="ModType" />
+          </LNodeType>
+          <DOType id="ModType" cdc="ENS">
+            <DA name="stVal" bType="Enum" fc="ST" type="EmptyEnumType" />
+          </DOType>
+          <EnumType id="EmptyEnumType" />
+        </DataTypeTemplates></SCL>`,
+        'application/xml'
+      );
+
+      const lNodeType = doc.querySelector('LNodeType')!;
+
+      expect(getEmptyReferencedElements(lNodeType)).to.deep.equal([
+        {
+          tagName: 'EnumType',
+          id: 'EmptyEnumType',
+          referencePath: 'Mod.stVal',
+        },
+      ]);
+    });
+
+    it('returns one empty element warning per usage path', () => {
+      const doc = new DOMParser().parseFromString(
+        `<SCL xmlns="http://www.iec.ch/61850/2003/SCL"><DataTypeTemplates>
+          <LNodeType id="YPTR1" lnClass="YPTR">
+            <DO name="HiVRtg" type="SharedDoType" />
+            <DO name="LoVRtg" type="SharedDoType" />
+          </LNodeType>
+          <DOType id="SharedDoType" cdc="ASG">
+            <DA name="setMag" bType="Struct" fc="SE" type="setMagType" />
+          </DOType>
+          <DAType id="setMagType" />
+        </DataTypeTemplates></SCL>`,
+        'application/xml'
+      );
+
+      const lNodeType = doc.querySelector('LNodeType')!;
+
+      expect(getEmptyReferencedElements(lNodeType)).to.deep.equal([
+        {
+          tagName: 'DAType',
+          id: 'setMagType',
+          referencePath: 'HiVRtg.setMag',
+        },
+        {
+          tagName: 'DAType',
+          id: 'setMagType',
+          referencePath: 'LoVRtg.setMag',
+        },
+      ]);
+    });
+
+    it('does not return empty warnings for paths already flagged as missing mandatory fields', () => {
+      const doc = new DOMParser().parseFromString(
+        `<SCL xmlns="http://www.iec.ch/61850/2003/SCL"><DataTypeTemplates>
+          <LNodeType id="RBRF1" lnClass="RBRF">
+            <DO name="Blk" type="BlkType" />
+          </LNodeType>
+          <DOType id="BlkType" cdc="SPS" />
+        </DataTypeTemplates></SCL>`,
+        'application/xml'
+      );
+
+      const lNodeType = doc.querySelector('LNodeType')!;
+      const missingMandatoryFields: Array<{
+        path: string[];
+        kind: 'subfield';
+      }> = [{ path: ['Blk', 'stVal'], kind: 'subfield' }];
+
+      expect(
+        getEmptyReferencedElements(lNodeType, missingMandatoryFields)
+      ).to.deep.equal([]);
     });
   });
 });

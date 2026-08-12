@@ -51,6 +51,59 @@ describe('NsdTemplateUpdater', () => {
     it('displays an action button', () =>
       expect(element.shadowRoot?.querySelector('oscd-fab')).to.exist);
 
+    it('renders mandatory missing field indicators', async () => {
+      (element as any).missingMandatoryFields = [
+        { path: ['ReqDO', 'stVal'], kind: 'subfield' },
+        { path: ['ReqDO', 'stVal', 'q'], kind: 'subfield' },
+      ];
+
+      await element.updateComplete;
+
+      const panel = element.shadowRoot?.querySelector(
+        '[data-testid="mandatory-fields"]'
+      );
+
+      expect(panel).to.exist;
+      const iconTexts = Array.from(panel!.querySelectorAll('oscd-icon')).map(
+        icon => icon.textContent?.trim()
+      );
+      expect(iconTexts).to.deep.equal(['expand_more', 'error', 'error']);
+
+      expect(panel?.textContent).to.include('ReqDO');
+      expect(panel?.textContent).to.include('ReqDO / stVal');
+    });
+
+    it('renders empty DAType warning entries', async () => {
+      (element as any).missingMandatoryFields = [];
+      (element as any).emptyReferencedElements = [
+        {
+          tagName: 'DAType',
+          id: 'setMag$oscd$_fa38fd5c52d1b4a0',
+          referencePath: 'HiVRtg.setMag',
+        },
+        {
+          tagName: 'DAType',
+          id: 'setMag$oscd$_fa38fd5c52d1b4a0',
+          referencePath: 'LoVRtg.setMag',
+        },
+      ];
+
+      await element.updateComplete;
+
+      const panel = element.shadowRoot?.querySelector(
+        '[data-testid="mandatory-fields"]'
+      );
+
+      expect(panel).to.exist;
+      const normalizedText = panel?.textContent?.replace(/\s+/g, ' ') ?? '';
+      expect(normalizedText).to.include(
+        'Empty DAType: setMag$oscd$_fa38fd5c52d1b4a0 used by HiVRtg.setMag'
+      );
+      expect(normalizedText).to.include(
+        'Empty DAType: setMag$oscd$_fa38fd5c52d1b4a0 used by LoVRtg.setMag'
+      );
+    });
+
     it('updates MMXU on action button click', async () => {
       // Test the default 'update' behavior
       localStorage.removeItem('template-update-setting');
