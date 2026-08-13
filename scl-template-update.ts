@@ -717,7 +717,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
         @click=${this.toggleMissingFieldsPanel}
         aria-expanded=${!this.missingFieldsCollapsed}
       >
-        <span>Missing mandatory or empty elements in file</span>
+        <span>Missing mandatory or empty elements in LNodeType</span>
         <oscd-icon
           class="chevron ${this.missingFieldsCollapsed ? 'collapsed' : ''}"
           >expand_more</oscd-icon
