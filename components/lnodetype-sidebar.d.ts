@@ -1,4 +1,4 @@
-import { LitElement } from 'lit';
+import { LitElement, PropertyValues } from 'lit';
 import { OscdFilledButton } from '@omicronenergy/oscd-ui/button/OscdFilledButton.js';
 import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
 import { OscdList } from '@omicronenergy/oscd-ui/list/OscdList.js';
@@ -14,13 +14,15 @@ export declare class LNodeTypeSidebar extends LNodeTypeSidebar_base {
     lNodeTypes: Element[];
     selectedId?: string;
     filter: string;
+    private sortedLNodeTypes;
     private debounceTimer?;
+    private static sortLNodeTypes;
+    protected willUpdate(changedProperties: PropertyValues<this>): void;
     private handleInput;
     private clearFilter;
     private handleClick;
     get filteredLNodeTypes(): Element[];
     render(): import("lit").TemplateResult<1>;
-    updated(changedProperties: Map<string, unknown>): void;
     static styles: import("lit").CSSResult;
 }
 export {};

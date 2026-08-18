@@ -7,10 +7,12 @@ import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
 import { OscdCircularProgress } from '@omicronenergy/oscd-ui/progress/OscdCircularProgress.js';
 import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
 import { OscdIconButton } from '@omicronenergy/oscd-ui/iconbutton/OscdIconButton.js';
+import { OscdAssistChip } from '@omicronenergy/oscd-ui/chips/OscdAssistChip.js';
 import { AddDataObjectDialog } from './components/add-data-object-dialog.js';
 import { DeleteDialog } from './components/delete-lnodetype-dialog.js';
 import { LNodeTypeSidebar } from './components/lnodetype-sidebar.js';
 import { SettingsDialog } from './components/settings-dialog.js';
+import { EmptyReferencedElement, type MissingMandatoryField } from './foundation/utils.js';
 declare const NsdTemplateUpdated_base: typeof LitElement & import("@open-wc/scoped-elements/lit-element.js").ScopedElementsHostConstructor;
 export default class NsdTemplateUpdated extends NsdTemplateUpdated_base {
     static scopedElements: {
@@ -22,6 +24,7 @@ export default class NsdTemplateUpdated extends NsdTemplateUpdated_base {
         'oscd-circular-progress': typeof OscdCircularProgress;
         'oscd-outlined-text-field': typeof OscdOutlinedTextField;
         'oscd-icon-button': typeof OscdIconButton;
+        'oscd-assist-chip': typeof OscdAssistChip;
         'add-data-object-dialog': typeof AddDataObjectDialog;
         'delete-dialog': typeof DeleteDialog;
         'lnodetype-sidebar': typeof LNodeTypeSidebar;
@@ -48,11 +51,19 @@ export default class NsdTemplateUpdated extends NsdTemplateUpdated_base {
     fabLabel: string;
     disableAddDataObjectButton: boolean;
     lNodeTypeDescription: string;
+    missingMandatoryFields: MissingMandatoryField[];
+    emptyReferencedElements: EmptyReferencedElement[];
+    missingFieldsCollapsed: boolean;
+    private toggleMissingFieldsPanel;
     updated(changedProperties: Map<string, unknown>): void;
     private refreshSelectedLNodeType;
+    private cloneSelection;
     private resetUI;
     private openAddDataObjectDialog;
     private showWarning;
+    private focusTreePath;
+    private getHeaderOffset;
+    private warningPathFromEntry;
     private closeWarningDialog;
     private closeChoiceDialog;
     private applyDescriptionUpdate;
@@ -70,6 +81,7 @@ export default class NsdTemplateUpdated extends NsdTemplateUpdated_base {
     renderChoice(): TemplateResult;
     renderFab(): TemplateResult;
     renderLNodeTypeControls(): TemplateResult;
+    renderMissingMandatoryFields(): TemplateResult;
     render(): TemplateResult<1>;
     static styles: import("lit").CSSResult;
 }

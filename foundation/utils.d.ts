@@ -1,5 +1,28 @@
 import { Tree, TreeSelection } from '@openenergytools/tree-grid';
 import { EditV2 } from '@openscd/oscd-api';
+export type MissingMandatoryField = {
+    path: string[];
+    kind: 'subfield';
+};
+export type EmptyReferencedElement = {
+    tagName: 'DOType' | 'DAType' | 'EnumType';
+    id: string;
+    referencePath: string;
+};
+/**
+ * Returns an array of the mandatory fields that are missing from the selection.
+ * @param tree The tree structure representing the data model
+ * @param selection The current selection in the tree
+ * @returns An array of MissingMandatoryField objects
+ */
+export declare function getMissingMandatoryFields(tree: Tree, selection: TreeSelection): MissingMandatoryField[];
+/**
+ * Finds all referenced elements of an LNodeType that are empty (i.e., have no children).
+ * @param lNodeType The LNodeType element to analyse
+ * @param missingMandatoryFields An optional array of MissingMandatoryField objects to filter out empty elements that are part of mandatory fields
+ * @returns An array of EmptyReferencedElement objects representing the empty referenced elements
+ */
+export declare function getEmptyReferencedElements(lNodeType: Element, missingMandatoryFields?: MissingMandatoryField[]): EmptyReferencedElement[];
 export declare function getLNodeTypes(doc: XMLDocument | undefined): Element[];
 export declare function getSelectedLNodeType(doc: XMLDocument, selected: string): Element | undefined;
 export declare function isLNodeTypeReferenced(doc: XMLDocument, selectedLNodeTypeID: string | null): boolean;
