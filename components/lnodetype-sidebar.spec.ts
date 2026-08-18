@@ -28,6 +28,29 @@ describe('LNodeTypeSidebar filtering', () => {
     expect(sidebar.filteredLNodeTypes.length).to.equal(nodes.length);
   });
 
+  it('returns all nodes sorted alphabetically by id', () => {
+    sidebar.filter = '';
+    const sortedIds = [
+      'alpha',
+      'bar',
+      'baz',
+      'beta',
+      'delta',
+      'epsilon',
+      'eta',
+      'foo',
+      'foobar',
+      'gamma',
+      'iota',
+      'kappa',
+      'qux',
+      'theta',
+      'zeta',
+    ];
+    const ids = sidebar.filteredLNodeTypes.map(n => n.getAttribute('id') || '');
+    expect(ids).to.deep.equal(sortedIds);
+  });
+
   it('filters with OR (space)', () => {
     sidebar.filter = 'foo bar';
     const ids = sidebar.filteredLNodeTypes.map(n => n.getAttribute('id'));
@@ -35,6 +58,13 @@ describe('LNodeTypeSidebar filtering', () => {
     expect(ids).to.include('bar');
     expect(ids).to.include('foobar');
     expect(ids).to.include('qux');
+  });
+
+  it('returns filtered results sorted alphabetically by id', () => {
+    sidebar.filter = 'foo bar';
+    const sortedIds = ['bar', 'foo', 'foobar', 'qux'];
+    const ids = sidebar.filteredLNodeTypes.map(n => n.getAttribute('id') || '');
+    expect(ids).to.deep.equal(sortedIds);
   });
 
   it('filters with OR (comma)', () => {

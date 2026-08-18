@@ -25,6 +25,7 @@ import { OscdIcon } from '@omicronenergy/oscd-ui/icon/OscdIcon.js';
 import { OscdCircularProgress } from '@omicronenergy/oscd-ui/progress/OscdCircularProgress.js';
 import { OscdOutlinedTextField } from '@omicronenergy/oscd-ui/textfield/OscdOutlinedTextField.js';
 import { OscdIconButton } from '@omicronenergy/oscd-ui/iconbutton/OscdIconButton.js';
+import { OscdAssistChip } from '@omicronenergy/oscd-ui/chips/OscdAssistChip.js';
 import { CdcChildren } from '@openscd/scl-lib/dist/tDataTypeTemplates/nsdToJson.js';
 
 import { AddDataObjectDialog } from './components/add-data-object-dialog.js';
@@ -43,6 +44,10 @@ import {
   filterSelection,
   removeDOsNotInSelection,
   computeOrphanedRemoves,
+  getMissingMandatoryFields,
+  getEmptyReferencedElements,
+  EmptyReferencedElement,
+  type MissingMandatoryField,
 } from './foundation/utils.js';
 
 export default class NsdTemplateUpdated extends ScopedElementsMixin(
@@ -57,6 +62,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     'oscd-circular-progress': OscdCircularProgress,
     'oscd-outlined-text-field': OscdOutlinedTextField,
     'oscd-icon-button': OscdIconButton,
+    'oscd-assist-chip': OscdAssistChip,
     'add-data-object-dialog': AddDataObjectDialog,
     'delete-dialog': DeleteDialog,
     'lnodetype-sidebar': LNodeTypeSidebar,
@@ -120,6 +126,19 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
   @state()
   lNodeTypeDescription = '';
 
+  @state()
+  missingMandatoryFields: MissingMandatoryField[] = [];
+
+  @state()
+  emptyReferencedElements: EmptyReferencedElement[] = [];
+
+  @state()
+  missingFieldsCollapsed = false;
+
+  private toggleMissingFieldsPanel(): void {
+    this.missingFieldsCollapsed = !this.missingFieldsCollapsed;
+  }
+
   updated(changedProperties: Map<string, unknown>) {
     super.updated?.(changedProperties);
     if (changedProperties.has('doc')) {
@@ -153,13 +172,27 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
         this.doc!
       );
       if (tree) {
-        this.lNodeTypeSelection = lNodeTypeToSelection(updatedLNodeType);
-        this.nsdSelection = this.lNodeTypeSelection;
+        const fileSelection = lNodeTypeToSelection(updatedLNodeType);
+        this.lNodeTypeSelection = this.cloneSelection(fileSelection);
+        this.nsdSelection = this.cloneSelection(fileSelection);
+        this.missingMandatoryFields = getMissingMandatoryFields(
+          tree,
+          this.lNodeTypeSelection
+        );
+        this.emptyReferencedElements = getEmptyReferencedElements(
+          updatedLNodeType,
+          this.missingMandatoryFields
+        );
         this.treeUI.tree = tree;
-        this.treeUI.selection = this.lNodeTypeSelection;
+        this.treeUI.selection = this.cloneSelection(fileSelection);
         this.treeUI.requestUpdate();
       }
     }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private cloneSelection(selection: TreeSelection): TreeSelection {
+    return structuredClone(selection);
   }
 
   private resetUI(full: boolean = false): void {
@@ -169,6 +202,8 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       this.nsdSelection = undefined;
       this.disableAddDataObjectButton = true;
       this.lNodeTypeDescription = '';
+      this.missingMandatoryFields = [];
+      this.emptyReferencedElements = [];
     }
     if (this.treeUI) {
       this.treeUI.tree = {};
@@ -184,6 +219,59 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
   private showWarning(msg: string): void {
     this.warningMsg = msg;
     this.warningDialog?.show();
+  }
+
+  private focusTreePath(path: string[]): void {
+    if (!this.treeUI || path.length === 0) return;
+
+    const findRow = (targetPath: string[]): HTMLElement | undefined => {
+      const rows = Array.from(
+        this.treeUI.shadowRoot?.querySelectorAll('md-list-item') ?? []
+      );
+
+      return rows.find(item => {
+        const value = item.getAttribute('value');
+        const parentPath = JSON.parse(item.getAttribute('data-path') ?? '[]');
+        const candidatePath = [...parentPath, value].filter(Boolean);
+        return (
+          candidatePath.length === targetPath.length &&
+          candidatePath.every((segment, index) => segment === targetPath[index])
+        );
+      }) as HTMLElement | undefined;
+    };
+
+    const possiblePaths = Array.from({ length: path.length }, (_, index) =>
+      path.slice(0, path.length - index)
+    );
+
+    const row = possiblePaths
+      .map(candidatePath => findRow(candidatePath))
+      .find(Boolean) as HTMLElement | undefined;
+
+    if (!row) return;
+
+    // Scroll the row into view with a margin to account for fixed header in CoMPAS
+    row.style.scrollMarginTop = `${this.getHeaderOffset()}px`;
+    row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  private getHeaderOffset(): number {
+    const value = getComputedStyle(this)
+      .getPropertyValue('--app-bar-height')
+      .trim();
+
+    return parseFloat(value) || 0;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private warningPathFromEntry(
+    entry: MissingMandatoryField | EmptyReferencedElement
+  ): string[] {
+    if ('path' in entry) return entry.path;
+    return entry.referencePath
+      .split('.')
+      .map(part => part.trim())
+      .filter(Boolean);
   }
 
   private closeWarningDialog(): void {
@@ -461,9 +549,18 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     const selectedLNodeTypeID = this.selectedLNodeType.getAttribute('id');
     const isReferenced = isLNodeTypeReferenced(this.doc!, selectedLNodeTypeID);
 
-    this.lNodeTypeSelection = lNodeTypeToSelection(this.selectedLNodeType);
+    const fileSelection = lNodeTypeToSelection(this.selectedLNodeType);
+    this.lNodeTypeSelection = this.cloneSelection(fileSelection);
+    this.missingMandatoryFields = getMissingMandatoryFields(
+      tree,
+      this.lNodeTypeSelection
+    );
+    this.emptyReferencedElements = getEmptyReferencedElements(
+      this.selectedLNodeType,
+      this.missingMandatoryFields
+    );
     this.treeUI.tree = tree;
-    this.treeUI.selection = this.lNodeTypeSelection;
+    this.treeUI.selection = this.cloneSelection(fileSelection);
     this.requestUpdate();
     this.treeUI.requestUpdate();
     await this.updateComplete;
@@ -607,12 +704,72 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
     </div>`;
   }
 
+  renderMissingMandatoryFields(): TemplateResult {
+    const totalCount =
+      this.missingMandatoryFields.length + this.emptyReferencedElements.length;
+
+    if (totalCount === 0) return html``;
+
+    return html`<div class="mandatory-fields" data-testid="mandatory-fields">
+      <button
+        class="mandatory-fields-header"
+        type="button"
+        @click=${this.toggleMissingFieldsPanel}
+        aria-expanded=${!this.missingFieldsCollapsed}
+      >
+        <span>Missing mandatory or empty elements in LNodeType</span>
+        <oscd-icon
+          class="chevron ${this.missingFieldsCollapsed ? 'collapsed' : ''}"
+          >expand_more</oscd-icon
+        >
+      </button>
+      ${this.missingFieldsCollapsed
+        ? ''
+        : html`<div class="mandatory-fields-list">
+            ${this.missingMandatoryFields.map(
+              field => html`<div class="warning-row">
+                <button
+                  class="warning-row-main"
+                  type="button"
+                  @click=${() => this.focusTreePath(field.path)}
+                >
+                  <oscd-icon>error</oscd-icon>
+                  <span class="warning-label">${field.path.join(' / ')}</span>
+                </button>
+                <span class="pill pill-success"
+                  >Auto-fixed on LNodeType update</span
+                >
+              </div>`
+            )}
+            ${this.emptyReferencedElements.map(
+              element => html`<div class="warning-row">
+                <button
+                  class="warning-row-main"
+                  type="button"
+                  title="Empty ${element.tagName}: ${element.id} used by ${element.referencePath}"
+                  @click=${() =>
+                    this.focusTreePath(this.warningPathFromEntry(element))}
+                >
+                  <oscd-icon>warning</oscd-icon>
+                  <span class="warning-label"
+                    >Empty ${element.tagName}: ${element.id} used by
+                    ${element.referencePath}</span
+                  >
+                </button>
+                <span class="pill pill-danger">Select a child element</span>
+              </div>`
+            )}
+          </div> `}
+    </div>`;
+  }
+
   render() {
     if (!this.doc) return html`<h1>Load SCL document first!</h1>`;
 
     return html`<div class="container">
         <div class="main-content">
           ${this.renderLNodeTypeControls()}
+          ${this.renderMissingMandatoryFields()}
           <tree-grid></tree-grid>
         </div>
         <lnodetype-sidebar
@@ -664,6 +821,8 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       --md-list-container-color: var(--oscd-base2);
       --md-fab-container-color: var(--oscd-secondary);
       --md-dialog-container-color: var(--oscd-base3);
+      --md-fab-label-text-color: var(--oscd-base2);
+      --md-fab-icon-color: var(--oscd-base2);
       font-family: var(--oscd-theme-text-font, 'Roboto');
     }
 
@@ -741,6 +900,107 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
       display: flex;
       gap: 16px;
       width: max-content;
+    }
+
+    .mandatory-fields {
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--oscd-base2);
+      color: var(--oscd-base00);
+    }
+
+    .mandatory-fields-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .mandatory-fields-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 0;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 600;
+      color: var(--oscd-base00);
+      text-align: left;
+    }
+
+    .mandatory-fields-header .chevron {
+      transition: transform 0.15s ease;
+    }
+
+    .mandatory-fields-header .chevron.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .mandatory-fields-list {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      border-top: 1px solid rgba(0, 0, 0, 0.12);
+      padding-top: 4px;
+    }
+
+    .warning-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 6px 4px;
+    }
+
+    .warning-row-main {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .warning-row-main:hover .warning-label,
+    .warning-row-main:focus-visible .warning-label {
+      color: var(--oscd-primary);
+    }
+
+    .warning-label {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .pill-success {
+      background: rgba(42, 161, 152, 0.15);
+      color: var(--oscd-accent-green, #2aa198);
+    }
+
+    .pill-danger {
+      background: rgba(220, 50, 47, 0.15);
+      color: var(--oscd-accent-red, #711210);
     }
   `;
 }

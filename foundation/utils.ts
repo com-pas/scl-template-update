@@ -1,6 +1,265 @@
 import { Tree, TreeSelection } from '@openenergytools/tree-grid';
 import { EditV2 } from '@openscd/oscd-api';
 
+export type MissingMandatoryField = {
+  path: string[];
+  kind: 'subfield';
+};
+
+export type EmptyReferencedElement = {
+  tagName: 'DOType' | 'DAType' | 'EnumType';
+  id: string;
+  referencePath: string;
+};
+
+type ReferencedType = {
+  typeId: string;
+  referencePath: string;
+};
+
+type EmptyReferenceAnalysis = {
+  emptyTagName?: EmptyReferencedElement['tagName'];
+  childReferences: ReferencedType[];
+};
+
+type TreeNodeWithMetadata = {
+  children?: Tree;
+  mandatory?: boolean;
+  presCond?: string;
+};
+
+function hasSelectionPath(selection: TreeSelection, path: string[]): boolean {
+  let current: TreeSelection | undefined = selection;
+  for (const segment of path) {
+    if (!current || !Object.hasOwn(current, segment)) return false;
+    current = current[segment];
+  }
+  return true;
+}
+
+function collectMissingMandatorySubfields(
+  tree: Tree,
+  selection: TreeSelection,
+  parentPath: string[] = []
+): MissingMandatoryField[] {
+  const missing: MissingMandatoryField[] = [];
+
+  Object.entries(tree).forEach(([name, rawNode]) => {
+    const node = (rawNode ?? {}) as TreeNodeWithMetadata;
+    const path = [...parentPath, name];
+    const presentInSelection = hasSelectionPath(selection, path);
+
+    if (node.mandatory && !presentInSelection) {
+      missing.push({ path, kind: 'subfield' });
+      return;
+    }
+
+    if (presentInSelection && node.children) {
+      missing.push(
+        ...collectMissingMandatorySubfields(node.children, selection, path)
+      );
+    }
+  });
+
+  return missing;
+}
+
+/**
+ * Returns an array of the mandatory fields that are missing from the selection.
+ * @param tree The tree structure representing the data model
+ * @param selection The current selection in the tree
+ * @returns An array of MissingMandatoryField objects
+ */
+export function getMissingMandatoryFields(
+  tree: Tree,
+  selection: TreeSelection
+): MissingMandatoryField[] {
+  const missing: MissingMandatoryField[] = [];
+
+  Object.entries(tree).forEach(([doName, rawNode]) => {
+    const node = (rawNode ?? {}) as TreeNodeWithMetadata;
+    const doPath = [doName];
+    const doPresentInSelection = hasSelectionPath(selection, doPath);
+    if (doPresentInSelection && node.children) {
+      missing.push(
+        ...collectMissingMandatorySubfields(node.children, selection, doPath)
+      );
+    }
+  });
+
+  return missing.sort((a, b) =>
+    a.path.join('/').localeCompare(b.path.join('/'))
+  );
+}
+
+function findTypeElementById(
+  dataTypeTemplates: Element,
+  id: string
+): Element | undefined {
+  return Array.from(dataTypeTemplates.children).find(child => {
+    const isKnownTypeTag =
+      child.tagName === 'DOType' ||
+      child.tagName === 'DAType' ||
+      child.tagName === 'EnumType';
+
+    return isKnownTypeTag && child.getAttribute('id') === id;
+  });
+}
+
+function getInitialReferencedTypes(lNodeType: Element): ReferencedType[] {
+  return Array.from(lNodeType.querySelectorAll(':scope > DO'))
+    .map(doElement => {
+      const typeId = doElement.getAttribute('type');
+      if (!typeId) return undefined;
+
+      return {
+        typeId,
+        referencePath: doElement.getAttribute('name'),
+      };
+    })
+    .filter((entry): entry is ReferencedType => !!entry);
+}
+
+function toChildReference(
+  element: Element,
+  parentReferencePath: string
+): ReferencedType | undefined {
+  const typeId = element.getAttribute('type');
+  const name = element.getAttribute('name');
+  if (!typeId || !name) return undefined;
+
+  return {
+    typeId,
+    referencePath: `${parentReferencePath}.${name}`,
+  };
+}
+
+function getChildReferences(
+  children: Element[],
+  parentReferencePath: string
+): ReferencedType[] {
+  return children
+    .map(child => toChildReference(child, parentReferencePath))
+    .filter((entry): entry is ReferencedType => !!entry);
+}
+
+function analyseReferencedType(
+  typeElement: Element,
+  referencePath: string
+): EmptyReferenceAnalysis {
+  if (typeElement.tagName === 'DOType') {
+    const directChildren = Array.from(
+      typeElement.querySelectorAll(':scope > DA, :scope > SDO')
+    );
+
+    return {
+      emptyTagName: directChildren.length === 0 ? 'DOType' : undefined,
+      childReferences: getChildReferences(directChildren, referencePath),
+    };
+  }
+
+  if (typeElement.tagName === 'DAType') {
+    const directChildren = Array.from(
+      typeElement.querySelectorAll(':scope > BDA')
+    );
+
+    return {
+      emptyTagName: directChildren.length === 0 ? 'DAType' : undefined,
+      childReferences: getChildReferences(directChildren, referencePath),
+    };
+  }
+
+  if (typeElement.tagName === 'EnumType') {
+    const enumValues = Array.from(
+      typeElement.querySelectorAll(':scope > EnumVal')
+    );
+
+    return {
+      emptyTagName: enumValues.length === 0 ? 'EnumType' : undefined,
+      childReferences: [],
+    };
+  }
+
+  return { childReferences: [] };
+}
+
+function hasMandatoryOverlap(
+  referencePath: string,
+  missingMandatoryFields: MissingMandatoryField[]
+): boolean {
+  const referencePathParts = referencePath
+    .split('.')
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  return missingMandatoryFields.some(missing => {
+    if (missing.path.length < referencePathParts.length) return false;
+    return referencePathParts.every(
+      (segment, index) => segment === missing.path[index]
+    );
+  });
+}
+
+/**
+ * Finds all referenced elements of an LNodeType that are empty (i.e., have no children).
+ * @param lNodeType The LNodeType element to analyse
+ * @param missingMandatoryFields An optional array of MissingMandatoryField objects to filter out empty elements that are part of mandatory fields
+ * @returns An array of EmptyReferencedElement objects representing the empty referenced elements
+ */
+export function getEmptyReferencedElements(
+  lNodeType: Element,
+  missingMandatoryFields: MissingMandatoryField[] = []
+): EmptyReferencedElement[] {
+  const dataTypeTemplates = lNodeType.closest('DataTypeTemplates');
+  if (!dataTypeTemplates) return [];
+
+  const referenceQueue: ReferencedType[] = getInitialReferencedTypes(lNodeType);
+
+  const processedReferences = new Set<string>();
+  const emptyElements: EmptyReferencedElement[] = [];
+
+  while (referenceQueue.length > 0) {
+    const currentReference = referenceQueue.shift();
+    if (!currentReference) break;
+
+    const { typeId, referencePath } = currentReference;
+    const referenceKey = `${typeId}:${referencePath}`;
+
+    if (!processedReferences.has(referenceKey)) {
+      processedReferences.add(referenceKey);
+
+      const typeElement = findTypeElementById(dataTypeTemplates, typeId);
+      if (typeElement) {
+        const analysis = analyseReferencedType(typeElement, referencePath);
+        if (analysis.emptyTagName) {
+          emptyElements.push({
+            tagName: analysis.emptyTagName,
+            id: typeId,
+            referencePath,
+          });
+        }
+
+        referenceQueue.push(...analysis.childReferences);
+      }
+    }
+  }
+
+  return emptyElements
+    .filter(
+      element =>
+        !hasMandatoryOverlap(element.referencePath, missingMandatoryFields)
+    )
+    .sort((a, b) => {
+      const tagOrder = a.tagName.localeCompare(b.tagName);
+      if (tagOrder !== 0) return tagOrder;
+
+      const idOrder = a.id.localeCompare(b.id);
+      if (idOrder !== 0) return idOrder;
+
+      return a.referencePath.localeCompare(b.referencePath);
+    });
+}
+
 export function getLNodeTypes(doc: XMLDocument | undefined): Element[] {
   return Array.from(
     doc?.querySelectorAll(':root > DataTypeTemplates > LNodeType') ?? []
