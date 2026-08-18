@@ -31,8 +31,7 @@ type TreeNodeWithMetadata = {
 function hasSelectionPath(selection: TreeSelection, path: string[]): boolean {
   let current: TreeSelection | undefined = selection;
   for (const segment of path) {
-    if (!current || !Object.prototype.hasOwnProperty.call(current, segment))
-      return false;
+    if (!current || !Object.hasOwn(current, segment)) return false;
     current = current[segment];
   }
   return true;
@@ -236,7 +235,7 @@ export function getEmptyReferencedElements(
           emptyElements.push({
             tagName: analysis.emptyTagName,
             id: typeId,
-            referencePath: referencePath,
+            referencePath,
           });
         }
 

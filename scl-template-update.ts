@@ -192,7 +192,7 @@ export default class NsdTemplateUpdated extends ScopedElementsMixin(
 
   // eslint-disable-next-line class-methods-use-this
   private cloneSelection(selection: TreeSelection): TreeSelection {
-    return JSON.parse(JSON.stringify(selection));
+    return structuredClone(selection);
   }
 
   private resetUI(full: boolean = false): void {
