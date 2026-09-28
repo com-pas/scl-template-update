@@ -3,7 +3,7 @@
   "description": "OpenSCD plugin for updating DataTypeTemplates",
   "license": "Apache-2.0",
   "author": "CoMPAS",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/com-pas/scl-template-update.git"
