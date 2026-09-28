@@ -1,9 +1,13 @@
 {
-  "name": "@com-pas/scl-template-update",
-  "description": "OpenSCD plugin for updating DataTypeTemplates",
+  "name": "@compas-oscd/scl-template-update",
+  "description": "OpenSCD plugin for updating LNodeType elements",
   "license": "Apache-2.0",
   "author": "CoMPAS",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/com-pas/scl-template-update.git"
+  },
   "type": "module",
   "exports": {
     ".": "./dist/scl-template-update.js"
