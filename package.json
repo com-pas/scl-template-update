@@ -3,7 +3,7 @@
   "description": "OpenSCD plugin for updating DataTypeTemplates",
   "license": "Apache-2.0",
   "author": "CoMPAS",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "exports": {
     ".": "./dist/scl-template-update.js"
